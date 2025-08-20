@@ -113,7 +113,7 @@ export default function ProjectOverlay({ project, isOpen, onClose }: ProjectOver
 
   // Load Lottie animations
   useEffect(() => {
-    if (project.title === 'd.CARE: Health monitoring app') {
+            if (project.title === 'Engaging health tracking') {
       const loadAnimations = async () => {
         try {
           console.log('Loading Lottie animations...')
@@ -443,7 +443,7 @@ export default function ProjectOverlay({ project, isOpen, onClose }: ProjectOver
 
               {/* Second Section - Additional Case Study Content (Full Width) */}
               <VStack align="start" spacing={12} pt={16} pb={20} w="full" maxW="1000px" mx="auto">
-                {project.title === 'd.CARE: Health monitoring app' ? (
+                {project.title === 'Engaging health tracking' ? (
                   <>
                     {/* TL;DR Section */}
                 <Box
@@ -465,7 +465,7 @@ export default function ProjectOverlay({ project, isOpen, onClose }: ProjectOver
                           TL;DR
                         </Text>
                         <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.7" fontWeight="normal">
-                          I designed and delivered a <Text as="span" fontWeight="semibold" color="gray.900">fluid intake tracker</Text> for the d.CARE patient app, enabling dialysis patients to monitor their daily intake in a <Text as="span" fontWeight="semibold" color="gray.900">motivating, user-friendly way</Text>. Using Figma, design systems, and remote-first collaboration, I worked closely with engineers, stakeholders, and healthcare professionals to co-create the solution. Despite pandemic restrictions, we managed remote user testing with nurses and patients, and the feature launched with <Text as="span" fontWeight="semibold" color="gray.900">highly positive feedback</Text>.
+                          I designed and delivered a <Text as="span" fontWeight="semibold" color="gray.900">fluid intake tracker</Text> for the patient app, enabling dialysis patients to monitor their daily intake in a <Text as="span" fontWeight="semibold" color="gray.900">motivating, user-friendly way</Text>. Using Figma, design systems, and remote-first collaboration, I worked closely with engineers, stakeholders, and healthcare professionals to co-create the solution. Despite pandemic restrictions, we managed remote user testing with nurses and patients, and the feature launched with <Text as="span" fontWeight="semibold" color="gray.900">highly positive feedback</Text>.
                         </Text>
                       </Box>
                 </Box>
@@ -483,7 +483,7 @@ export default function ProjectOverlay({ project, isOpen, onClose }: ProjectOver
                           Background
                         </Text>
                         <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal">
-                          The client provides life-enhancing renal care to <Text as="span" fontWeight="semibold" color="gray.900">38,000 patients across 23 countries</Text>. Their digital ecosystem, the d.CARE patient app, had mainly been used to view lab results and treatment values. Internally, it was clear the app had potential to become a more active companion in patients' daily health routines.
+                          The client provides life-enhancing renal care to <Text as="span" fontWeight="semibold" color="gray.900">38,000 patients across 23 countries</Text>. Their digital ecosystem, the patient app, had mainly been used to view lab results and treatment values. Internally, it was clear the app had potential to become a more active companion in patients' daily health routines.
                         </Text>
                         <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal">
                           One of the most pressing needs was helping patients on dialysis monitor and manage fluid intake. For patients unable to produce urine, accurate tracking is <Text as="span" fontWeight="semibold" color="gray.900">critical but challenging to maintain</Text>.
@@ -825,7 +825,7 @@ export default function ProjectOverlay({ project, isOpen, onClose }: ProjectOver
                         </Text>
                         <Box pl={4} mb={4}>
                           <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal">
-                            • <Text as="span" fontWeight="semibold">Successfully launched</Text> as part of the newly rebranded d.CARE app
+                            • <Text as="span" fontWeight="semibold">Successfully launched</Text> as part of the newly rebranded patient app
                             <br />• <Text as="span" fontWeight="semibold">Maintained consistency</Text> across design system despite distributed collaboration
                             <br />• <Text as="span" fontWeight="semibold">Designed with accessibility in mind</Text>, compensating for limited in-person testing
                             <br />• <Text as="span" fontWeight="semibold">Conducted remote feedback sessions</Text> via nurses, with patients reporting the feature as <Text as="span" fontWeight="semibold" color="gray.900">"fun", "useful", "super"</Text>
@@ -852,7 +852,7 @@ export default function ProjectOverlay({ project, isOpen, onClose }: ProjectOver
                       </VStack>
                       </Box>
               </>
-            ) : project.title === 'My Pages: Customer portal' ? (
+            ) : project.title === 'Smarter customer portal' ? (
               <>
                 {/* TL;DR Section */}
                 <Box
@@ -874,7 +874,7 @@ export default function ProjectOverlay({ project, isOpen, onClose }: ProjectOver
                       TL;DR
                     </Text>
                     <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.7" fontWeight="normal">
-                      I designed a proof of concept for Alfa Laval's customer portal, My Pages, to give customers an easy overview of their products, documentation, and service options. Using a <Text as="span" fontWeight="semibold" color="gray.900">shortened design sprint, user personas, and rapid prototyping</Text>, I created flows that addressed pain points like scattered product information, unclear service booking, and limited support availability. The concept was <Text as="span" fontWeight="semibold" color="gray.900">well received internally</Text> and is now in the pipeline for production.
+                          I designed a proof of concept for Alfa Laval's customer portal to give customers an easy overview of their products, documentation, and service options. Using a <Text as="span" fontWeight="semibold" color="gray.900">shortened design sprint, user personas, and rapid prototyping</Text>, I created flows that addressed pain points like scattered product information, unclear service booking, and limited support availability. The concept was <Text as="span" fontWeight="semibold" color="gray.900">well received internally</Text> and is now in the pipeline for production.
                     </Text>
                   </Box>
                 </Box>
@@ -898,7 +898,7 @@ export default function ProjectOverlay({ project, isOpen, onClose }: ProjectOver
                       Customers frequently needed quick access to product information, documentation, and after-sales service. Without a structured digital platform, this often meant frustration for both customers and support staff.
                     </Text>
                     <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal">
-                      The proposed customer portal, My Pages, aimed to centralize this experience by giving customers an overview of their products, documentation, and service options in one place.
+                                                The proposed customer portal aimed to centralize this experience by giving customers an overview of their products, documentation, and service options in one place.
                     </Text>
                   </VStack>
                 </Box>
@@ -1068,7 +1068,7 @@ export default function ProjectOverlay({ project, isOpen, onClose }: ProjectOver
                       </Text>
                     </Box>
                     <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal">
-                      The long-term goal of My Pages is to strengthen Alfa Laval's customer relationships by making product ownership and service effortless. Success will be measured both quantitatively (active and returning users) and qualitatively (customer satisfaction and usability feedback).
+                          The long-term goal of the customer portal is to strengthen Alfa Laval's customer relationships by making product ownership and service effortless. Success will be measured both quantitatively (active and returning users) and qualitatively (customer satisfaction and usability feedback).
                     </Text>
                   </VStack>
                 </Box>
@@ -1086,7 +1086,7 @@ export default function ProjectOverlay({ project, isOpen, onClose }: ProjectOver
                   </VStack>
                 </Box>
               </>
-            ) : project.title === 'Rent at Clas: Tool rental' ? (
+            ) : project.title === 'Tool rentals made digital' ? (
               <>
                 {/* TL;DR Section */}
                 <Box
@@ -1140,7 +1140,7 @@ export default function ProjectOverlay({ project, isOpen, onClose }: ProjectOver
                       Clas Ohlson is one of the largest home improvement chains in Scandinavia with <Text as="span" fontWeight="semibold" color="gray.900">over 230 stores</Text>. In 2016, they began experimenting with tool rentals in a few locations. By 2020, with more people looking to rent instead of own and the environmental benefits that come with it, the company decided to expand the concept digitally.
                     </Text>
                     <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal">
-                      The new initiative, Rent at Clas, aimed to make tool rentals available online, accessible in all stores, and integrated into their commerce platform.
+                                                The new initiative aimed to make tool rentals available online, accessible in all stores, and integrated into their commerce platform.
                     </Text>
                   </VStack>
                 </Box>
@@ -1303,7 +1303,7 @@ export default function ProjectOverlay({ project, isOpen, onClose }: ProjectOver
                     </Text>
                     <Box pl={4} mb={4}>
                       <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal">
-                        • <Text as="span" fontWeight="semibold">Rent at Clas launched</Text> in September 2020 across Sweden, Norway, and Finland
+                        • <Text as="span" fontWeight="semibold">The tool rental service launched</Text> in September 2020 across Sweden, Norway, and Finland
                         <br />• <Text as="span" fontWeight="semibold">The final product closely followed</Text> the designs we delivered, both for customer booking and staff management
                         <br />• <Text as="span" fontWeight="semibold">Customers could now rent tools online</Text> without issues, while staff had a smooth system to manage rentals
                         <br />• <Text as="span" fontWeight="semibold">Although limited time meant less user testing</Text> than I'd have liked, the project showed how fast, collaborative design can enable a major service rollout within months
@@ -1325,7 +1325,7 @@ export default function ProjectOverlay({ project, isOpen, onClose }: ProjectOver
                   </VStack>
                 </Box>
               </>
-            ) : project.title === 'Modity: Portfolio reports' ? (
+            ) : project.title === 'Simplifying energy reports' ? (
               <>
                 {/* TL;DR Section */}
                 <Box
@@ -1347,7 +1347,7 @@ export default function ProjectOverlay({ project, isOpen, onClose }: ProjectOver
                       TL;DR
                     </Text>
                     <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.7" fontWeight="normal">
-                      I designed a new portfolio reporting feature for Modity's customer portal, making complex energy trading data easier to understand and act on. As the sole designer, I worked closely with business stakeholders, PM, engineers, and end users to translate high-level energy requirements into clear, usable reports. The concept was <Text as="span" fontWeight="semibold" color="gray.900">well received by both the client and their customers</Text>, who praised the simplicity of the final solution.
+                          I designed a new portfolio reporting feature for the customer portal, making complex energy trading data easier to understand and act on. As the sole designer, I worked closely with business stakeholders, PM, engineers, and end users to translate high-level energy requirements into clear, usable reports. The concept was <Text as="span" fontWeight="semibold" color="gray.900">well received by both the client and their customers</Text>, who praised the simplicity of the final solution.
                     </Text>
                   </Box>
                 </Box>
@@ -1499,7 +1499,7 @@ export default function ProjectOverlay({ project, isOpen, onClose }: ProjectOver
                     </Text>
                     <Box pl={4} mb={4}>
                       <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal">
-                        • <Text as="span" fontWeight="semibold">The portfolio reporting feature was implemented</Text> in Modity's customer portal and rolled out to their users
+                        • <Text as="span" fontWeight="semibold">The portfolio reporting feature was implemented</Text> in the customer portal and rolled out to their users
                         <br />• <Text as="span" fontWeight="semibold">Both the client and their customers responded positively</Text>, highlighting how the design made complex reporting much easier to understand and act on
                         <br />• <Text as="span" fontWeight="semibold">Customers valued the ability to run their own analyses</Text> and compare results with invoices directly in the portal, reducing time spent on manual work
                         <br />• <Text as="span" fontWeight="semibold">The client praised the project</Text> for translating a highly complex domain into a simple interface within a short timeframe

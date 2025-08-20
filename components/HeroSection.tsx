@@ -90,7 +90,7 @@ export default function HeroSection() {
                   fontSize={{ base: "2xl", "2xl": "2.2rem" }}
                   color="gray.500"
                   fontWeight="medium"
-                  pl={2}
+                  pl={{ base: 0, lg: 2 }}
                   opacity={isVisible ? 1 : 0}
                   transform={isVisible ? 'translateY(0)' : 'translateY(30px)'}
                   transition="opacity 0.8s ease-out, transform 0.8s ease-out"
@@ -100,7 +100,7 @@ export default function HeroSection() {
                 </Text>
                 <Heading
                   as="h1"
-                  fontSize={{ base: "80px", lg: "100px" }}
+                  fontSize={{ base: "48px", lg: "100px" }}
                   fontWeight="normal"
                   color="gray.800"
                   lineHeight="1.1"

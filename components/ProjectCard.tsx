@@ -35,9 +35,17 @@ const ProjectCard = forwardRef<HTMLDivElement, ProjectCardProps>(
   ({ dateRange, title, description, tags, imageSrc, imageAlt, scrollEffect, onClick }, ref) => {
     const cardBg = useColorModeValue('white', 'white')
 
+    const handleClick = () => {
+      console.log('ProjectCard clicked:', title)
+      if (onClick) {
+        onClick()
+      }
+    }
+
     return (
       <Box
-        onClick={onClick}
+        onClick={handleClick}
+        className="project-card-clickable"
         style={{
           transform: `scale(${scrollEffect.scale}) translateY(${scrollEffect.translateY}px)`,
           opacity: scrollEffect.opacity,
@@ -46,27 +54,41 @@ const ProjectCard = forwardRef<HTMLDivElement, ProjectCardProps>(
           width: '100%',
           cursor: 'pointer',
         }}
+        sx={{
+          cursor: 'pointer !important',
+          '&:hover': {
+            cursor: 'pointer !important'
+          },
+          '& *': {
+            cursor: 'inherit !important'
+          }
+        }}
       >
         <Box
           ref={ref}
           bg={cardBg}
-          p={4}
+          p={{ base: 0, lg: 8 }}
           borderRadius="2xl"
           border="1px solid"
           borderColor="gray.200"
           position="relative"
           overflow="hidden"
-          cursor="pointer"
+          cursor="inherit"
           transition="all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)"
           _hover={{
             boxShadow: "0 2px 8px rgba(0, 0, 0, 0.06)",
             transform: "translateY(-2px)"
           }}
           role="group"
+          sx={{
+            '&:hover .project-image': {
+              transform: "scale(1.05)"
+            }
+          }}
         >
           <Grid
             templateColumns={{ base: '1fr', lg: '1fr 1fr' }}
-            gap={{ base: 8, lg: 10 }}
+            gap={{ base: 0, lg: 10 }}
             alignItems="stretch"
             h="full"
           >
@@ -78,15 +100,15 @@ const ProjectCard = forwardRef<HTMLDivElement, ProjectCardProps>(
                 h={{ base: 'auto', lg: 'full' }}
                 justify="space-between"
                 pt={8}
-                pb={4}
-                px={4}
+                pb={{ base: 2, lg: 4 }}
+                px={{ base: 4, lg: 0 }}
                 w="full"
                 maxW={{ base: '100%', lg: '680px' }}
               >
                 {/* Content Section */}
                 <VStack 
                   align="start" 
-                  spacing={6}
+                  spacing={{ base: 5, lg: 6 }}
                   style={{
                     transformOrigin: 'top left',
                   }}
@@ -124,7 +146,7 @@ const ProjectCard = forwardRef<HTMLDivElement, ProjectCardProps>(
                   </Text>
                     
                   {/* Project Tags */}
-                  <HStack spacing={3} flexWrap="wrap" gap={3} mb={{ base: 0, lg: 6 }} align="flex-start">
+                  <HStack spacing={3} flexWrap="wrap" gap={3} mb={{ base: 2, lg: 6 }} align="flex-start">
                     {tags.map((tag, index) => (
                       <Tag
                         key={index}
@@ -138,8 +160,7 @@ const ProjectCard = forwardRef<HTMLDivElement, ProjectCardProps>(
                         py={2}
                         _hover={{
                           bg: '#E1F0FE',
-                          color: '#5A7A9A',
-                          cursor: 'pointer'
+                          color: '#5A7A9A'
                         }}
                         transition="all 0.2s ease"
                       >
@@ -188,16 +209,18 @@ const ProjectCard = forwardRef<HTMLDivElement, ProjectCardProps>(
                 alignItems="center"
                 justifyContent="center"
                 h={{ base: 'auto', lg: 'full' }}
-                py={2}
-                px={4}
+                py={{ base: 4, lg: 0 }}
+                px={{ base: 4, lg: 0 }}
               >
                 {/* Project Image */}
                 <Box
+                  className="project-image"
                   w="full"
-                  h={{ base: "200px", md: "250px", lg: "300px", xl: "350px", "2xl": "400px" }}
+                  h={{ base: "200px", md: "250px", lg: "full" }}
                   borderRadius="xl"
                   overflow="hidden"
                   style={{ transformOrigin: 'center' }}
+                  transition="all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)"
                 >
                   <Image
                     src={imageSrc}

@@ -49,6 +49,17 @@ export default function FloatingNavbar({ isHero = false }: FloatingNavbarProps) 
     window.open(mailtoLink)
   }
 
+  const handleSmoothScroll = (targetId: string) => {
+    const targetElement = document.getElementById(targetId)
+    if (targetElement) {
+      targetElement.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+        inline: 'nearest'
+      })
+    }
+  }
+
   // Hero navbar is always visible and never floating
   if (isHero) {
     return (
@@ -64,27 +75,38 @@ export default function FloatingNavbar({ isHero = false }: FloatingNavbarProps) 
           borderRadius="xl"
           border="1px solid"
           borderColor="gray.200"
-          px={4}
-          py={3}
+          px={{ base: 3, md: 4 }}
+          py={{ base: 2, md: 3 }}
           display="inline-flex"
           w="fit-content"
+          maxW={{ base: 'calc(100vw - 32px)', md: 'none' }}
         >
-          <Flex alignItems="center" justifyContent="space-between" gap={8}>
+          <Flex alignItems="center" justifyContent="space-between" gap={{ base: 4, md: 8 }}>
             {/* Navigation Links */}
-            <HStack spacing={6}>
-                          <Link
-              href="#projects"
-              color="gray.600"
-              _hover={{ color: 'gray.800' }}
-              fontWeight="medium"
-            >
-              Projects
-            </Link>
+            <HStack spacing={{ base: 4, md: 6 }}>
+              <Link
+                href="#projects"
+                color="gray.600"
+                _hover={{ color: 'gray.800' }}
+                fontWeight="medium"
+                fontSize={{ base: 'sm', md: 'md' }}
+                onClick={(e) => {
+                  e.preventDefault()
+                  handleSmoothScroll('projects')
+                }}
+              >
+                Projects
+              </Link>
               <Link
                 href="#process"
                 color="gray.600"
                 _hover={{ color: 'gray.800' }}
                 fontWeight="medium"
+                fontSize={{ base: 'sm', md: 'md' }}
+                onClick={(e) => {
+                  e.preventDefault()
+                  handleSmoothScroll('process')
+                }}
               >
                 Process
               </Link>
@@ -93,8 +115,18 @@ export default function FloatingNavbar({ isHero = false }: FloatingNavbarProps) 
                 color="gray.600"
                 _hover={{ color: 'gray.800' }}
                 fontWeight="medium"
+                fontSize={{ base: 'sm', md: 'md' }}
+                onClick={(e) => {
+                  e.preventDefault()
+                  handleSmoothScroll('about')
+                }}
               >
-                About me
+                <Box as="span" display={{ base: 'none', md: 'inline' }}>
+                  About me
+                </Box>
+                <Box as="span" display={{ base: 'inline', md: 'none' }}>
+                  About
+                </Box>
               </Link>
             </HStack>
 
@@ -106,13 +138,19 @@ export default function FloatingNavbar({ isHero = false }: FloatingNavbarProps) 
               _hover={{ bg: 'gray.800', transform: 'translateY(-1px)' }}
               transition="all 0.2s"
               borderRadius="lg"
-              px={6}
+              px={{ base: 4, md: 6 }}
               py={2}
               fontWeight="medium"
-              h="35px"
+              h={{ base: '32px', md: '35px' }}
+              fontSize={{ base: 'sm', md: 'md' }}
               onClick={handleContactClick}
             >
-              Contact me
+              <Box as="span" display={{ base: 'none', md: 'inline' }}>
+                Contact me
+              </Box>
+              <Box as="span" display={{ base: 'inline', md: 'none' }}>
+                Contact
+              </Box>
             </Button>
           </Flex>
         </Box>
@@ -124,14 +162,13 @@ export default function FloatingNavbar({ isHero = false }: FloatingNavbarProps) 
   return (
     <Box
       position="fixed"
-      top="20px"
+      top={{ base: '16px', md: '20px' }}
       left="50%"
       zIndex={1000}
       transition="all 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)"
       transform={`translateX(-50%) translateY(${isFloating ? '0' : '-100px'})`}
       opacity={isFloating ? 1 : 0}
       pointerEvents={isFloating ? "auto" : "none"}
-      mb={4}
     >
       <Box
         bg="white"
@@ -139,21 +176,27 @@ export default function FloatingNavbar({ isHero = false }: FloatingNavbarProps) 
         boxShadow="0 2px 8px rgba(0, 0, 0, 0.06)"
         border="1px solid"
         borderColor="gray.200"
-        px={4}
-        py={3}
+        px={{ base: 3, md: 4 }}
+        py={{ base: 2, md: 3 }}
         display="inline-flex"
         w="fit-content"
-        minW="max-content"
+        maxW={{ base: 'calc(100vw - 32px)', md: 'none' }}
+        minW={{ base: 'auto', md: 'max-content' }}
       >
-        <Flex alignItems="center" justifyContent="space-between" gap={6}>
+        <Flex alignItems="center" justifyContent="space-between" gap={{ base: 3, md: 6 }}>
           {/* Navigation Links */}
-          <HStack spacing={5}>
+          <HStack spacing={{ base: 3, md: 5 }}>
             <Link
               href="#projects"
               color="gray.600"
               _hover={{ color: 'gray.800' }}
               fontWeight="medium"
               whiteSpace="nowrap"
+              fontSize={{ base: 'sm', md: 'md' }}
+              onClick={(e) => {
+                e.preventDefault()
+                handleSmoothScroll('projects')
+              }}
             >
               Projects
             </Link>
@@ -163,6 +206,11 @@ export default function FloatingNavbar({ isHero = false }: FloatingNavbarProps) 
               _hover={{ color: 'gray.800' }}
               fontWeight="medium"
               whiteSpace="nowrap"
+              fontSize={{ base: 'sm', md: 'md' }}
+              onClick={(e) => {
+                e.preventDefault()
+                handleSmoothScroll('process')
+              }}
             >
               Process
             </Link>
@@ -172,8 +220,18 @@ export default function FloatingNavbar({ isHero = false }: FloatingNavbarProps) 
               _hover={{ color: 'gray.800' }}
               fontWeight="medium"
               whiteSpace="nowrap"
+              fontSize={{ base: 'sm', md: 'md' }}
+              onClick={(e) => {
+                e.preventDefault()
+                handleSmoothScroll('about')
+              }}
             >
-              About me
+              <Box as="span" display={{ base: 'none', md: 'inline' }}>
+                About me
+              </Box>
+              <Box as="span" display={{ base: 'inline', md: 'none' }}>
+                About
+              </Box>
             </Link>
           </HStack>
 
@@ -185,14 +243,20 @@ export default function FloatingNavbar({ isHero = false }: FloatingNavbarProps) 
             _hover={{ bg: 'gray.800', transform: 'translateY(-1px)' }}
             transition="all 0.2s"
             borderRadius="lg"
-            px={6}
+            px={{ base: 4, md: 6 }}
             py={2}
             fontWeight="medium"
-            h="35px"
+            h={{ base: '32px', md: '35px' }}
+            fontSize={{ base: 'sm', md: 'md' }}
             whiteSpace="nowrap"
             onClick={handleContactClick}
           >
-            Contact me
+            <Box as="span" display={{ base: 'none', md: 'inline' }}>
+              Contact me
+            </Box>
+            <Box as="span" display={{ base: 'inline', md: 'none' }}>
+              Contact
+            </Box>
           </Button>
         </Flex>
       </Box>

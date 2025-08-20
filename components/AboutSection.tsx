@@ -65,6 +65,11 @@ export default function AboutSection() {
                 transform={isVisible ? 'translateX(0)' : 'translateX(-40px)'}
                 transition="opacity 0.8s ease-out, transform 0.8s ease-out"
                 transitionDelay="0.1s"
+                sx={{
+                  '@media (max-width: 767px)': {
+                    transform: isVisible ? 'translateY(0)' : 'translateY(20px)'
+                  }
+                }}
               />
             </Box>
           </GridItem>
@@ -83,6 +88,11 @@ export default function AboutSection() {
                 transform={isVisible ? 'translateX(0)' : 'translateX(40px)'}
                 transition="opacity 0.8s ease-out, transform 0.8s ease-out"
                 transitionDelay="0.2s"
+                sx={{
+                  '@media (max-width: 767px)': {
+                    transform: isVisible ? 'translateY(0)' : 'translateY(20px)'
+                  }
+                }}
               >
                 ABOUT ME
               </Text>
@@ -99,6 +109,11 @@ export default function AboutSection() {
                 transform={isVisible ? 'translateX(0)' : 'translateX(40px)'}
                 transition="opacity 0.8s ease-out, transform 0.8s ease-out"
                 transitionDelay="0.3s"
+                sx={{
+                  '@media (max-width: 767px)': {
+                    transform: isVisible ? 'translateY(0)' : 'translateY(20px)'
+                  }
+                }}
               >
                 UX/UI Designer
               </Heading>
@@ -113,6 +128,11 @@ export default function AboutSection() {
                 transform={isVisible ? 'translateX(0)' : 'translateX(40px)'}
                 transition="opacity 0.8s ease-out, transform 0.8s ease-out"
                 transitionDelay="0.4s"
+                sx={{
+                  '@media (max-width: 767px)': {
+                    transform: isVisible ? 'translateY(0)' : 'translateY(20px)'
+                  }
+                }}
               >
                 Dedicated to creative problem-solving and committed to crafting genuine user experiences. 
                 I focus on simplifying complex processes and user journeys, turning them into innovative and modern solutions. 
@@ -130,6 +150,11 @@ export default function AboutSection() {
                 transform={isVisible ? 'translateX(0)' : 'translateX(40px)'}
                 transition="opacity 0.8s ease-out, transform 0.8s ease-out"
                 transitionDelay="0.5s"
+                sx={{
+                  '@media (max-width: 767px)': {
+                    transform: isVisible ? 'translateY(0)' : 'translateY(20px)'
+                  }
+                }}
               >
                 Outside of work, you'll find me exploring my love for creativity through various avenues. 
                 In the past, I channeled my problem-solving skills into music production, striving to achieve specific sounds. 
@@ -161,6 +186,11 @@ export default function AboutSection() {
                 transform={isVisible ? 'translateX(0)' : 'translateX(40px)'}
                 transition="opacity 0.8s ease-out, transform 0.8s ease-out"
                 transitionDelay="0.6s"
+                sx={{
+                  '@media (max-width: 767px)': {
+                    transform: isVisible ? 'translateY(0)' : 'translateY(20px)'
+                  }
+                }}
               >
                 LinkedIn Profile
               </Button>

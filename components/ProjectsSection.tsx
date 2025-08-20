@@ -20,35 +20,35 @@ export default function ProjectsSection() {
   const projects = [
     {
       dateRange: 'Q3–Q4 2021',
-      title: 'd.CARE: Health monitoring app',
+      title: 'Engaging health tracking',
       description: 'Making self-monitoring fun for dialysis patients. I designed and delivered a fluid intake tracker for the d.CARE patient app, enabling dialysis patients to monitor their daily intake in a motivating, user-friendly way.',
       tags: ['Behavioral design', 'Healthcare UX', 'Gamification', 'Accessibility', 'Remote testing', 'Design systems'],
       imageSrc: getPublicUrl('IMAGES', 'images/diaverum.png', 'w=800,h=600,fit=cover,format=webp'),
-      imageAlt: 'd.CARE: Health monitoring app - Dialysis Patient App'
+      imageAlt: 'Engaging health tracking - Dialysis Patient App'
     },
     {
       dateRange: 'February 2020',
-      title: 'My Pages: Customer portal',
+      title: 'Smarter customer portal',
       description: 'A conceptual design of a customer portal. I designed a proof of concept for Alfa Laval\'s customer portal, My Pages, to give customers an easy overview of their products, documentation, and service options.',
       tags: ['Design sprint', 'B2B UX', 'Service design', 'Stakeholder workshops', 'Concept design', 'Enterprise UX'],
       imageSrc: getPublicUrl('IMAGES', 'images/alfalaval.png', 'w=800,h=600,fit=cover,format=webp'),
-      imageAlt: 'My Pages: Customer portal - Alfa Laval Customer Portal Design'
+      imageAlt: 'Smarter customer portal - Alfa Laval Customer Portal Design'
     },
     {
       dateRange: 'March 2020 – May 2020',
-      title: 'Rent at Clas: Tool rental',
+      title: 'Tool rentals made digital',
       description: 'Enabling customers to rent tools instead of buying them. I designed the digital experience for Clas Ohlson\'s rental service, enabling customers to rent tools online instead of buying them.',
       tags: ['Rental platform', 'Staff interface', 'Rapid prototyping', 'Multi-stakeholder', 'E-commerce', 'Service design'],
       imageSrc: getPublicUrl('IMAGES', 'images/clasohlson.png', 'w=800,h=600,fit=cover,format=webp'),
-      imageAlt: 'Rent at Clas: Tool rental - Tool Rental Service Design'
+      imageAlt: 'Tool rentals made digital - Tool Rental Service Design'
     },
     {
       dateRange: 'December 2019 – January 2020',
-      title: 'Modity: Portfolio reports',
-      description: 'Energy portfolio management made easy. I designed a new portfolio reporting feature for Modity\'s customer portal, making complex energy trading data easier to understand and act on.',
+      title: 'Simplifying energy reports',
+      description: 'Energy portfolio management made easy. I designed a new portfolio reporting feature for the customer portal, making complex energy trading data easier to understand and act on.',
       tags: ['Data visualization', 'Financial UX', 'Domain research', 'User stories', 'Technical design', 'B2B analytics'],
       imageSrc: getPublicUrl('IMAGES', 'images/modity.png', 'w=800,h=600,fit=cover,format=webp'),
-      imageAlt: 'Modity: Portfolio reports - Energy Portfolio Management Interface'
+      imageAlt: 'Simplifying energy reports - Energy Portfolio Management Interface'
     }
   ]
 

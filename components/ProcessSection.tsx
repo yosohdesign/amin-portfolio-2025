@@ -18,25 +18,24 @@ export default function ProcessSection() {
   const [scrollProgress, setScrollProgress] = useState(0)
   const containerRef = useRef<HTMLDivElement>(null)
   const [isVisible, setIsVisible] = useState(false)
-  const sectionRef = useRef<HTMLDivElement>(null)
+  const animationRef = useRef<HTMLDivElement>(null)
 
-  // Intersection Observer for appear on screen animation
+  // Intersection Observer for appear animation (separate from scroll logic)
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
-          // Add a small delay to ensure the animation is visible
-          setTimeout(() => setIsVisible(true), 100)
+          setIsVisible(true)
         }
       },
       {
-        threshold: 0.2,
+        threshold: 0.1,
         rootMargin: '0px 0px -50px 0px'
       }
     )
 
-    if (sectionRef.current) {
-      observer.observe(sectionRef.current)
+    if (animationRef.current) {
+      observer.observe(animationRef.current)
     }
 
     return () => observer.disconnect()
@@ -163,11 +162,11 @@ export default function ProcessSection() {
   }
 
   return (
-    <Box py={20} bg="white" id="process" ref={sectionRef}>
+    <Box py={20} bg="white" id="process" ref={containerRef}>
       <Container maxW="container.2xl" px={{ base: 4, lg: 8 }}>
         <VStack spacing={16} align="stretch">
           {/* Section Header */}
-          <VStack spacing={6} align="start">
+          <VStack spacing={6} align="start" ref={animationRef}>
             <Heading
               as="h2"
               size="2xl"
@@ -175,9 +174,8 @@ export default function ProcessSection() {
               color="black"
               fontSize={{ base: '3xl', md: '3xl', lg: '4xl', xl: '5xl' }}
               opacity={isVisible ? 1 : 0}
-              transform={isVisible ? 'translateY(0)' : 'translateY(30px)'}
-              transition="opacity 0.8s ease-out, transform 0.8s ease-out"
-              transitionDelay="0.1s"
+              transform={isVisible ? 'translateY(0)' : 'translateY(20px)'}
+              transition="opacity 0.6s ease-out, transform 0.6s ease-out"
             >
               My process
             </Heading>
@@ -200,8 +198,8 @@ export default function ProcessSection() {
                 justifyContent="center"
                 zIndex={10}
                 opacity={isVisible ? 1 : 0}
-                transform={isVisible ? 'translateY(0)' : 'translateY(30px)'}
-                transition="opacity 0.8s ease-out, transform 0.8s ease-out"
+                transform={isVisible ? 'translateY(0)' : 'translateY(20px)'}
+                transition="opacity 0.6s ease-out, transform 0.6s ease-out"
                 transitionDelay="0.1s"
               >
                 <Box position="relative" w="full" h="full" display="flex" alignItems="center" justifyContent="center">
@@ -259,10 +257,8 @@ export default function ProcessSection() {
                       borderBottom={isLastSection ? "2px solid" : "none"}
                       borderBottomColor={isLastSection ? "gray.200" : "transparent"}
                       position="relative"
+                      transition="border-top-color 0.3s ease"
                       py={{ base: 8, lg: 12 }}
-                      opacity={isVisible ? 1 : 0}
-                      transform={isVisible ? 'translateY(0)' : 'translateY(30px)'}
-                      transition={`border-top-color 0.3s ease, opacity 0.8s ease-out ${0.2 + (index * 0.1)}s, transform 0.8s ease-out ${0.2 + (index * 0.1)}s`}
                     >
                       {/* Mobile Step Number */}
                       <Text
