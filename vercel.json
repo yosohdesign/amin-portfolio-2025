@@ -2,10 +2,5 @@
   "framework": "nextjs",
   "buildCommand": "npm run build:simple",
   "installCommand": "npm install",
-  "devCommand": "npm run dev",
-  "functions": {
-    "app/**/*.tsx": {
-      "runtime": "nodejs20.x"
-    }
-  }
+  "devCommand": "npm run dev"
 }
