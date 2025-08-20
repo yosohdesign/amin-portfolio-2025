@@ -6,6 +6,8 @@
     "dev": "next dev",
     "build": "NEXT_TELEMETRY_DISABLED=1 next build",
     "build:vercel": "NEXT_TELEMETRY_DISABLED=1 NEXT_BUILD_TRACES=false next build",
+    "build:simple": "NEXT_TELEMETRY_DISABLED=1 NEXT_BUILD_TRACES=false NODE_OPTIONS='--max-old-space-size=4096' next build --no-lint",
+    "build:custom": "node scripts/build.js",
     "start": "next start",
     "lint": "next lint",
     "build:analyze": "ANALYZE=true next build"
