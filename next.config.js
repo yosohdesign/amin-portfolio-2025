@@ -13,19 +13,12 @@ const nextConfig = {
   compress: true,
   poweredByHeader: false,
   
-  // Build optimizations - Completely disable problematic features
+  // Build optimizations
   experimental: {
-    // Disable build traces that cause the stack overflow
-    buildTraces: false,
     // Enable webpack build worker for faster builds
     webpackBuildWorker: true,
     // Disable other potentially problematic features
     serverComponentsExternalPackages: ['@supabase/supabase-js'],
-    // Disable telemetry completely
-    telemetry: false,
-    // Disable other experimental features that might cause issues
-    optimizePackageImports: false,
-    webpackBuildWorker: false,
   },
   
   // Webpack optimizations
@@ -40,7 +33,7 @@ const nextConfig = {
       }
     }
     
-    // Completely disable build traces in webpack
+    // Optimize chunk splitting
     if (!dev) {
       config.optimization = {
         ...config.optimization,
@@ -75,15 +68,6 @@ const nextConfig = {
   
   // Disable source maps in production
   productionBrowserSourceMaps: false,
-  
-  // Optimize bundle analyzer
-  bundleAnalyzer: false,
-  
-  // Disable build traces completely
-  onDemandEntries: {
-    maxInactiveAge: 25 * 1000,
-    pagesBufferLength: 2,
-  },
 }
 
 module.exports = nextConfig
