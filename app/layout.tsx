@@ -1,0 +1,34 @@
+import type { Metadata } from 'next'
+import { Outfit } from 'next/font/google'
+import Providers from './providers'
+import PerformanceMonitor from '@/components/PerformanceMonitor'
+
+const outfit = Outfit({ 
+  subsets: ['latin'],
+  variable: '--font-outfit',
+  display: 'swap',
+  preload: true,
+  fallback: ['system-ui', 'arial'],
+})
+
+export const metadata: Metadata = {
+  title: 'Amin Yosoh - Product Designer Portfolio',
+  description: 'Product Designer with 8+ years of experience in UX/UI design, UX research, and user-centered design. Currently working at Axis Communications.',
+}
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  return (
+    <html lang="en" className={outfit.variable}>
+      <body className={outfit.className}>
+        <Providers>
+          {children}
+          <PerformanceMonitor />
+        </Providers>
+      </body>
+    </html>
+  )
+}

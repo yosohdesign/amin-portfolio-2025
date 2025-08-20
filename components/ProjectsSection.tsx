@@ -1,0 +1,167 @@
+'use client'
+
+import { Box, Container, Heading, VStack, SimpleGrid, useColorModeValue } from '@chakra-ui/react'
+import { motion } from 'framer-motion'
+import { useRef, useState, useEffect } from 'react'
+import { useScrollEffect } from '@/lib/hooks/useScrollEffect'
+import ProjectCard from './ProjectCard'
+import ProjectOverlay from './ProjectOverlay'
+import { getPublicUrl } from '@/lib/storage'
+
+export default function ProjectsSection() {
+  const textColor = useColorModeValue('gray.600', 'gray.300')
+  const { getScrollEffect } = useScrollEffect()
+  const projectRefs = useRef<(HTMLDivElement | null)[]>([])
+  const [selectedProject, setSelectedProject] = useState<typeof projects[0] | null>(null)
+  const [isVisible, setIsVisible] = useState(false)
+  const [visibleCards, setVisibleCards] = useState<boolean[]>([])
+  const sectionRef = useRef<HTMLDivElement>(null)
+
+  const projects = [
+    {
+      dateRange: 'Q3–Q4 2021',
+      title: 'd.CARE: Health monitoring app',
+      description: 'Making self-monitoring fun for dialysis patients. I designed and delivered a fluid intake tracker for the d.CARE patient app, enabling dialysis patients to monitor their daily intake in a motivating, user-friendly way.',
+      tags: ['Behavioral design', 'Healthcare UX', 'Gamification', 'Accessibility', 'Remote testing', 'Design systems'],
+      imageSrc: getPublicUrl('IMAGES', 'images/diaverum.png', 'w=800,h=600,fit=cover,format=webp'),
+      imageAlt: 'd.CARE: Health monitoring app - Dialysis Patient App'
+    },
+    {
+      dateRange: 'February 2020',
+      title: 'My Pages: Customer portal',
+      description: 'A conceptual design of a customer portal. I designed a proof of concept for Alfa Laval\'s customer portal, My Pages, to give customers an easy overview of their products, documentation, and service options.',
+      tags: ['Design sprint', 'B2B UX', 'Service design', 'Stakeholder workshops', 'Concept design', 'Enterprise UX'],
+      imageSrc: getPublicUrl('IMAGES', 'images/alfalaval.png', 'w=800,h=600,fit=cover,format=webp'),
+      imageAlt: 'My Pages: Customer portal - Alfa Laval Customer Portal Design'
+    },
+    {
+      dateRange: 'March 2020 – May 2020',
+      title: 'Rent at Clas: Tool rental',
+      description: 'Enabling customers to rent tools instead of buying them. I designed the digital experience for Clas Ohlson\'s rental service, enabling customers to rent tools online instead of buying them.',
+      tags: ['Rental platform', 'Staff interface', 'Rapid prototyping', 'Multi-stakeholder', 'E-commerce', 'Service design'],
+      imageSrc: getPublicUrl('IMAGES', 'images/clasohlson.png', 'w=800,h=600,fit=cover,format=webp'),
+      imageAlt: 'Rent at Clas: Tool rental - Tool Rental Service Design'
+    },
+    {
+      dateRange: 'December 2019 – January 2020',
+      title: 'Modity: Portfolio reports',
+      description: 'Energy portfolio management made easy. I designed a new portfolio reporting feature for Modity\'s customer portal, making complex energy trading data easier to understand and act on.',
+      tags: ['Data visualization', 'Financial UX', 'Domain research', 'User stories', 'Technical design', 'B2B analytics'],
+      imageSrc: getPublicUrl('IMAGES', 'images/modity.png', 'w=800,h=600,fit=cover,format=webp'),
+      imageAlt: 'Modity: Portfolio reports - Energy Portfolio Management Interface'
+    }
+  ]
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          // Add a small delay to ensure the animation is visible
+          setTimeout(() => setIsVisible(true), 100)
+        }
+      },
+      {
+        threshold: 0.2,
+        rootMargin: '0px 0px -50px 0px'
+      }
+    )
+
+    if (sectionRef.current) {
+      observer.observe(sectionRef.current)
+    }
+
+    return () => observer.disconnect()
+  }, [])
+
+  // Initialize visibleCards array with staggered timing when section becomes visible
+  useEffect(() => {
+    if (isVisible) {
+      // Title appears first (immediately)
+      // First card appears after a short delay
+      setTimeout(() => {
+        setVisibleCards(prev => {
+          const newVisible = new Array(projects.length).fill(false)
+          newVisible[0] = true
+          return newVisible
+        })
+      }, 200) // Reduced from 300ms to 200ms
+
+      // Stagger the remaining cards with shorter intervals
+      projects.slice(1).forEach((_, index) => {
+        setTimeout(() => {
+          setVisibleCards(prev => {
+            const newVisible = [...prev]
+            newVisible[index + 1] = true
+            return newVisible
+          })
+        }, 400 + (index * 150)) // 400ms, 550ms, 700ms delays (reduced from 200ms to 150ms intervals)
+      })
+    }
+  }, [isVisible, projects.length])
+
+  return (
+    <Box py={20} pt={48} bg="white" id="projects" ref={sectionRef}>
+      <Container maxW="container.2xl" px={{ base: 4, lg: 8 }}>
+        <VStack spacing={12} align="stretch">
+          {/* Section Header */}
+          <VStack spacing={6} align="start">
+            <Heading
+              as="h2"
+              size="2xl"
+              fontWeight="medium"
+              color="black"
+              fontSize={{ base: '3xl', md: '3xl', lg: '4xl', xl: '5xl' }}
+              opacity={isVisible ? 1 : 0}
+              transform={isVisible ? 'translateY(0)' : 'translateY(30px)'}
+              transition="opacity 1s ease-out, transform 1s ease-out"
+            >
+              Selected work & Projects
+            </Heading>
+          </VStack>
+
+          {/* Featured Project Card */}
+          <Box
+            opacity={visibleCards[0] ? 1 : 0}
+            transform={visibleCards[0] ? 'translateY(0)' : 'translateY(30px)'}
+            transition="opacity 0.7s ease-out, transform 0.7s ease-out"
+          >
+            <ProjectCard
+              ref={(el) => { projectRefs.current[0] = el }}
+              {...projects[0]}
+              scrollEffect={getScrollEffect(projectRefs.current[0])}
+              onClick={() => setSelectedProject(projects[0])}
+            />
+          </Box>
+
+          {/* Additional Case Study Cards */}
+          <VStack spacing={12} align="stretch">
+            {projects.slice(1).map((project, index) => (
+              <Box
+                key={index + 1}
+                opacity={visibleCards[index + 1] ? 1 : 0}
+                transform={visibleCards[index + 1] ? 'translateY(0)' : 'translateY(30px)'}
+                transition="opacity 0.7s ease-out, transform 0.7s ease-out"
+              >
+                <ProjectCard
+                  ref={(el) => { projectRefs.current[index + 1] = el }}
+                  {...project}
+                  scrollEffect={getScrollEffect(projectRefs.current[index + 1])}
+                  onClick={() => setSelectedProject(project)}
+                />
+              </Box>
+            ))}
+          </VStack>
+        </VStack>
+      </Container>
+      
+      {/* Project Overlay */}
+      {selectedProject && (
+        <ProjectOverlay
+          project={selectedProject}
+          isOpen={!!selectedProject}
+          onClose={() => setSelectedProject(null)}
+        />
+      )}
+    </Box>
+  )
+}
