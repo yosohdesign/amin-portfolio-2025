@@ -55,3 +55,17 @@ coverage/
 
 # Scripts
 scripts/
+
+# TypeScript build info
+*.tsbuildinfo
+
+# ESLint cache
+.eslintcache
+
+# Next.js cache
+.next/
+.next-cache/
+
+# Temporary files
+*.tmp
+*.temp

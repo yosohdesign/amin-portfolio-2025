@@ -13,14 +13,16 @@ const nextConfig = {
   compress: true,
   poweredByHeader: false,
   
-  // Build optimizations
+  // Build optimizations - Disable problematic features
   experimental: {
     // Enable webpack build worker for faster builds
     webpackBuildWorker: true,
+    // Disable other potentially problematic features
+    serverComponentsExternalPackages: ['@supabase/supabase-js'],
   },
   
   // Webpack optimizations
-  webpack: (config, { isServer }) => {
+  webpack: (config, { isServer, dev }) => {
     // Optimize bundle size
     if (!isServer) {
       config.resolve.fallback = {
@@ -31,8 +33,41 @@ const nextConfig = {
       }
     }
     
+    // Disable build traces in webpack
+    if (!dev) {
+      config.optimization = {
+        ...config.optimization,
+        splitChunks: {
+          chunks: 'all',
+          cacheGroups: {
+            default: false,
+            vendors: false,
+            // Create a vendor chunk for better caching
+            vendor: {
+              name: 'vendor',
+              chunks: 'all',
+              test: /node_modules/,
+              priority: 20,
+            },
+            // Create a common chunk
+            common: {
+              name: 'common',
+              minChunks: 2,
+              chunks: 'all',
+              priority: 10,
+              reuseExistingChunk: true,
+              enforce: true,
+            },
+          },
+        },
+      }
+    }
+    
     return config
   },
+  
+  // Disable source maps in production
+  productionBrowserSourceMaps: false,
 }
 
 module.exports = nextConfig

@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "NEXT_TELEMETRY_DISABLED=1 next build",
+    "build:vercel": "NEXT_TELEMETRY_DISABLED=1 NEXT_BUILD_TRACES=false next build",
     "start": "next start",
     "lint": "next lint",
     "build:analyze": "ANALYZE=true next build"
