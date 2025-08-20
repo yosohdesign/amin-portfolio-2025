@@ -118,9 +118,9 @@ export default function ProjectOverlay({ project, isOpen, onClose }: ProjectOver
         try {
           console.log('Loading Lottie animations...')
           const [fluid1Res, fluid2Res, fluid3Res] = await Promise.all([
-            fetch('/animations/fluid1.json?v=' + Date.now()),
-            fetch('/animations/fluid2.json?v=' + Date.now()),
-            fetch('/animations/fluid3.json?v=' + Date.now())
+            fetch(getPublicUrl('ANIMATIONS', 'animations/fluid1.json')),
+            fetch(getPublicUrl('ANIMATIONS', 'animations/fluid2.json')),
+            fetch(getPublicUrl('ANIMATIONS', 'animations/fluid3.json'))
           ])
           
           if (!fluid1Res.ok || !fluid2Res.ok || !fluid3Res.ok) {
