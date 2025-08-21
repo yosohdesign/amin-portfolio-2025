@@ -32,13 +32,13 @@ export default function Gallery({ images }: GalleryProps) {
           // Start revealing images one by one with gentle, smooth delays
           images.left.forEach((_, index) => {
             setTimeout(() => {
-              setVisibleImages(prev => new Set([...prev, `left-${index}`]))
+              setVisibleImages(prev => new Set(Array.from(prev).concat(`left-${index}`)))
             }, 300 + (index * 80)) // 300ms initial delay, then gentle 80ms between each
           })
           
           images.right.forEach((_, index) => {
             setTimeout(() => {
-              setVisibleImages(prev => new Set([...prev, `right-${index}`]))
+              setVisibleImages(prev => new Set(Array.from(prev).concat(`right-${index}`)))
             }, 500 + (index * 80)) // Right column starts 200ms after left
           })
         }
