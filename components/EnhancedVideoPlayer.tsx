@@ -45,7 +45,7 @@ export default function EnhancedVideoPlayer({
   const [hasError, setHasError] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [thumbnailUrl, setThumbnailUrl] = useState<string>('')
-  const playerRef = useRef<ReactPlayer>(null)
+  const playerRef = useRef<any>(null)
   
   const bgColor = useColorModeValue('gray.100', 'gray.800')
   const borderColor = useColorModeValue('gray.200', 'gray.700')

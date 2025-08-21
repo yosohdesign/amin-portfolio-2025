@@ -33,7 +33,7 @@ export default function CustomVideoPlayer({
   const [isClient, setIsClient] = useState(false)
   const [isPlaying, setIsPlaying] = useState(false)
   const [hasError, setHasError] = useState(false)
-  const playerRef = useRef<ReactPlayer>(null)
+  const playerRef = useRef<any>(null)
   
   const bgColor = useColorModeValue('gray.100', 'gray.800')
   const borderColor = useColorModeValue('gray.200', 'gray.700')
