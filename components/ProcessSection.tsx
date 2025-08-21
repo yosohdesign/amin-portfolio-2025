@@ -264,15 +264,19 @@ export default function ProcessSection() {
                       <Text
                         fontSize="7xl"
                         fontWeight="bold"
-                        color="blue.400"
-                        opacity="0.25"
+                        color={isSectionActive ? "#3575D9" : "blue.400"}
+                        opacity={isSectionActive ? 1 : 0.25}
                         lineHeight="1"
                         fontFamily="var(--font-outfit), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
                         letterSpacing="tight"
                         mb={4}
                         display={{ base: 'block', lg: 'none' }}
+                        transition="color 0.3s ease, opacity 0.3s ease"
                       >
-                        {step.step}
+                        <Text as="span" color="blue.400" opacity="0.25">0</Text>
+                        <Text as="span" color={isSectionActive ? "#3575D9" : "blue.400"} opacity={isSectionActive ? 1 : 0.25}>
+                          {step.step === '01' ? '1' : step.step === '02' ? '2' : step.step === '03' ? '3' : '4'}
+                        </Text>
                       </Text>
 
                       {/* Content */}

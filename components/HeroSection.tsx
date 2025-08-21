@@ -30,19 +30,30 @@ export default function HeroSection() {
 
   const galleryImages = {
     left: [
-      getPublicUrl('IMAGES', 'images/gallery/Gallery 01.png', 'w=600,h=800,fit=cover,format=webp'),
-      getPublicUrl('IMAGES', 'images/gallery/Gallery 03.png', 'w=600,h=800,fit=cover,format=webp'),
-      getPublicUrl('IMAGES', 'images/gallery/Gallery 05.png', 'w=600,h=800,fit=cover,format=webp'),
-      getPublicUrl('IMAGES', 'images/gallery/Gallery 07.png', 'w=600,h=800,fit=cover,format=webp'),
-      getPublicUrl('IMAGES', 'images/gallery/Gallery 09.png', 'w=600,h=800,fit=cover,format=webp')
+      getPublicUrl('IMAGES', 'images/gallery/Gallery 01.png', 'w=400,h=500,fit=cover,format=webp,q=85'),
+      getPublicUrl('IMAGES', 'images/gallery/Gallery 03.png', 'w=400,h=500,fit=cover,format=webp,q=85'),
+      getPublicUrl('IMAGES', 'images/gallery/Gallery 05.png', 'w=400,h=500,fit=cover,format=webp,q=85'),
+      getPublicUrl('IMAGES', 'images/gallery/Gallery 07.png', 'w=400,h=500,fit=cover,format=webp,q=85'),
+      getPublicUrl('IMAGES', 'images/gallery/Gallery 09.png', 'w=400,h=500,fit=cover,format=webp,q=85')
     ],
     right: [
-      getPublicUrl('IMAGES', 'images/gallery/Gallery 02.png', 'w=600,h=800,fit=cover,format=webp'),
-      getPublicUrl('IMAGES', 'images/gallery/Gallery 04.png', 'w=600,h=800,fit=cover,format=webp'),
-      getPublicUrl('IMAGES', 'images/gallery/Gallery 06.png', 'w=600,h=800,fit=cover,format=webp'),
-      getPublicUrl('IMAGES', 'images/gallery/Gallery 08.png', 'w=600,h=800,fit=cover,format=webp')
+      getPublicUrl('IMAGES', 'images/gallery/Gallery 02.png', 'w=400,h=500,fit=cover,format=webp,q=85'),
+      getPublicUrl('IMAGES', 'images/gallery/Gallery 04.png', 'w=400,h=500,fit=cover,format=webp,q=85'),
+      getPublicUrl('IMAGES', 'images/gallery/Gallery 06.png', 'w=400,h=500,fit=cover,format=webp,q=85'),
+      getPublicUrl('IMAGES', 'images/gallery/Gallery 08.png', 'w=400,h=500,fit=cover,format=webp,q=85')
     ]
   }
+
+  // Simple preloading for better performance
+  useEffect(() => {
+    if (isVisible) {
+      const allImages = [...galleryImages.left, ...galleryImages.right]
+      allImages.forEach(src => {
+        const img = new Image()
+        img.src = src
+      })
+    }
+  }, [isVisible, galleryImages])
 
   const { scale, translateY, opacity } = getHeroScrollEffect()
 
@@ -94,7 +105,7 @@ export default function HeroSection() {
                   opacity={isVisible ? 1 : 0}
                   transform={isVisible ? 'translateY(0)' : 'translateY(30px)'}
                   transition="opacity 0.8s ease-out, transform 0.8s ease-out"
-                  transitionDelay="0.3s"
+                  transitionDelay="0.2s"
                 >
                   Amin Yosoh
                 </Text>
@@ -108,7 +119,7 @@ export default function HeroSection() {
                   opacity={isVisible ? 1 : 0}
                   transform={isVisible ? 'translateY(0)' : 'translateY(30px)'}
                   transition="opacity 0.8s ease-out, transform 0.8s ease-out"
-                  transitionDelay="0.5s"
+                  transitionDelay="0.4s"
                 >
                   Product Designer
                 </Heading>
@@ -122,7 +133,7 @@ export default function HeroSection() {
                   opacity={isVisible ? 1 : 0}
                   transform={isVisible ? 'translateY(0)' : 'translateY(30px)'}
                   transition="opacity 0.8s ease-out, transform 0.8s ease-out"
-                  transitionDelay="0.7s"
+                  transitionDelay="0.6s"
                 >
                   Dedicated to creative problem-solving and committed to crafting genuine user experiences. 
                   I focus on simplifying complex processes and user journeys, turning them into innovative and modern solutions.
@@ -136,9 +147,12 @@ export default function HeroSection() {
                 opacity={isVisible ? 1 : 0}
                 transform={isVisible ? 'translateY(0)' : 'translateY(30px)'}
                 transition="opacity 0.8s ease-out, transform 0.8s ease-out"
-                transitionDelay="0.9s"
+                transitionDelay="0.7s"
               >
-                <Gallery images={galleryImages} />
+                <Gallery 
+                  images={galleryImages} 
+                  isVisible={isVisible} 
+                />
               </Box>
             </GridItem>
           </Grid>

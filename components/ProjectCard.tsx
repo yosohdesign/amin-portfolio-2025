@@ -10,7 +10,6 @@ import {
   Button,
   Grid,
   GridItem,
-  Image,
   useColorModeValue,
 } from '@chakra-ui/react'
 import { ArrowForwardIcon } from '@chakra-ui/icons'
@@ -216,19 +215,21 @@ const ProjectCard = forwardRef<HTMLDivElement, ProjectCardProps>(
                 <Box
                   className="project-image"
                   w="full"
-                  h={{ base: "200px", md: "250px", lg: "full" }}
+                  h={{ base: "280px", md: "320px", lg: "full" }}
                   borderRadius="xl"
                   overflow="hidden"
                   style={{ transformOrigin: 'center' }}
                   transition="all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)"
                 >
-                  <Image
+                  <img
                     src={imageSrc}
                     alt={imageAlt}
-                    w="full"
-                    h="full"
-                    objectFit="cover"
-                    borderRadius="12px"
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
+                      borderRadius: '12px'
+                    }}
                   />
                 </Box>
               </Box>

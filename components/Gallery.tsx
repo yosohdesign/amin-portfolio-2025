@@ -19,13 +19,35 @@ interface GalleryProps {
     left: string[]
     right: string[]
   }
+  isVisible?: boolean
 }
 
-export default function Gallery({ images }: GalleryProps) {
+export default function Gallery({ images, isVisible = false }: GalleryProps) {
   const [visibleImages, setVisibleImages] = useState<Set<string>>(new Set())
   const galleryRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
+    if (isVisible) {
+      // Start revealing images immediately when parent says it's visible
+      // Left column starts first, then right column follows
+      images.left.forEach((_, index) => {
+        setTimeout(() => {
+          setVisibleImages(prev => new Set(Array.from(prev).concat(`left-${index}`)))
+        }, 100 + (index * 60)) // Faster timing: 100ms initial, 60ms between each
+      })
+      
+      images.right.forEach((_, index) => {
+        setTimeout(() => {
+          setVisibleImages(prev => new Set(Array.from(prev).concat(`right-${index}`)))
+        }, 200 + (index * 60)) // Right column starts 100ms after left, same 60ms spacing
+      })
+    }
+  }, [isVisible, images.left.length, images.right.length])
+
+  // Fallback intersection observer for cases where isVisible prop isn't used
+  useEffect(() => {
+    if (isVisible) return // Skip if already controlled by parent
+    
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
@@ -54,7 +76,7 @@ export default function Gallery({ images }: GalleryProps) {
     }
 
     return () => observer.disconnect()
-  }, [images.left.length, images.right.length])
+  }, [isVisible, images.left.length, images.right.length])
 
   const renderImageColumn = (imageList: string[], animation: string, duration: number, columnIndex: number) => (
     <Box
@@ -88,7 +110,7 @@ export default function Gallery({ images }: GalleryProps) {
               overflow="hidden"
               opacity={isVisible ? 1 : 0}
               transform={isVisible ? 'translateY(0)' : 'translateY(15px)'}
-              transition="opacity 1.2s cubic-bezier(0.4, 0, 0.2, 1), transform 1.2s cubic-bezier(0.4, 0, 0.2, 1)"
+              transition="opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1), transform 0.8s cubic-bezier(0.4, 0, 0.2, 1)"
             >
               <Image
                 src={src}
@@ -97,6 +119,12 @@ export default function Gallery({ images }: GalleryProps) {
                 h="full"
                 objectFit="cover"
                 borderRadius="2xl"
+                loading="eager"
+                opacity={isVisible ? 1 : 0}
+                transition="opacity 0.8s ease-out"
+                style={{
+                  transform: 'translateZ(0)', // Force hardware acceleration
+                }}
               />
             </Box>
           )
@@ -115,7 +143,7 @@ export default function Gallery({ images }: GalleryProps) {
               overflow="hidden"
               opacity={isVisible ? 1 : 0}
               transform={isVisible ? 'translateY(0)' : 'translateY(15px)'}
-              transition="opacity 1.2s cubic-bezier(0.4, 0, 0.2, 1), transform 1.2s cubic-bezier(0.4, 0, 0.2, 1)"
+              transition="opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1), transform 0.8s cubic-bezier(0.4, 0, 0.2, 1)"
             >
               <Image
                 src={src}
@@ -124,6 +152,12 @@ export default function Gallery({ images }: GalleryProps) {
                 h="full"
                 objectFit="cover"
                 borderRadius="2xl"
+                loading="eager"
+                opacity={isVisible ? 1 : 0}
+                transition="opacity 0.8s ease-out"
+                style={{
+                  transform: 'translateZ(0)', // Force hardware acceleration
+                }}
               />
             </Box>
           )

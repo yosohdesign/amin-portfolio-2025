@@ -1,0 +1,43 @@
+/* Global CSS for smooth scrolling and better performance */
+
+/* Remove default smooth scrolling to avoid conflicts with our custom implementation */
+html {
+  scroll-padding-top: 20px; /* Keep padding for fixed headers */
+}
+
+/* Additional optimizations for smoother scrolling */
+html, body {
+  overflow-x: hidden; /* Prevent horizontal scroll */
+  -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+}
+
+/* Custom scrollbar for webkit browsers */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Ensure smooth transitions */
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Optimize animations */
+* {
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}

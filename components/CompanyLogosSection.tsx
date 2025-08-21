@@ -47,10 +47,16 @@ export default function CompanyLogosSection() {
 
   return (
     <Box py={16} pb={24} bg="white" ref={sectionRef}>
-      <Container maxW="container.2xl" px={{ base: 4, lg: 8 }}>
-        {/* Logos Container */}
+      {/* Container with normal padding for section layout */}
+      <Box
+        px={{ base: 0, lg: 8 }}
+        maxW="container.2xl"
+        mx="auto"
+      >
+        {/* Logos Container - breaks out of parent padding to go edge-to-edge */}
         <Box
-          w="full"
+          w="100vw"
+          ml="calc(-50vw + 50%)"
           overflow="hidden"
           opacity={isVisible ? 1 : 0}
           transform={isVisible ? 'translateY(0)' : 'translateY(20px)'}
@@ -62,7 +68,11 @@ export default function CompanyLogosSection() {
             sx={{
               display: 'flex',
               gap: { base: 16, md: 20, lg: 24 },
-              animation: 'scroll 60s linear infinite',
+              // Much faster scroll animation - 20s on mobile, 25s on larger screens
+              animation: 'scroll 20s linear infinite',
+              '@media (min-width: 768px)': {
+                animation: 'scroll 25s linear infinite',
+              },
               '@keyframes scroll': {
                 '0%': { transform: 'translateX(0)' },
                 '100%': { transform: 'translateX(-100%)' },
@@ -100,7 +110,7 @@ export default function CompanyLogosSection() {
             ))}
           </Box>
         </Box>
-      </Container>
+      </Box>
     </Box>
   )
 }

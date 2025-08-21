@@ -8,6 +8,7 @@ import {
   Flex,
 } from '@chakra-ui/react'
 import { useEffect, useState } from 'react'
+import { useSmoothScroll } from '@/lib/hooks/useSmoothScroll'
 
 interface FloatingNavbarProps {
   isHero?: boolean;
@@ -16,6 +17,7 @@ interface FloatingNavbarProps {
 export default function FloatingNavbar({ isHero = false }: FloatingNavbarProps) {
   const [isFloating, setIsFloating] = useState(false)
   const [viewportHeight, setViewportHeight] = useState(0)
+  const { smoothScrollTo } = useSmoothScroll()
 
   useEffect(() => {
     const handleResize = () => {
@@ -50,14 +52,11 @@ export default function FloatingNavbar({ isHero = false }: FloatingNavbarProps) 
   }
 
   const handleSmoothScroll = (targetId: string) => {
-    const targetElement = document.getElementById(targetId)
-    if (targetElement) {
-      targetElement.scrollIntoView({
-        behavior: 'smooth',
-        block: 'start',
-        inline: 'nearest'
-      })
-    }
+    smoothScrollTo(targetId, {
+      duration: 1800, // 1.8 seconds for relaxed, smooth movement
+      easing: 'easeInOut',
+      offset: 20 // Small offset from the top
+    })
   }
 
   // Hero navbar is always visible and never floating
@@ -89,7 +88,7 @@ export default function FloatingNavbar({ isHero = false }: FloatingNavbarProps) 
                 color="gray.600"
                 _hover={{ color: 'gray.800' }}
                 fontWeight="medium"
-                fontSize={{ base: 'sm', md: 'md' }}
+                fontSize={{ base: 'md', md: 'md' }}
                 onClick={(e) => {
                   e.preventDefault()
                   handleSmoothScroll('projects')
@@ -102,7 +101,7 @@ export default function FloatingNavbar({ isHero = false }: FloatingNavbarProps) 
                 color="gray.600"
                 _hover={{ color: 'gray.800' }}
                 fontWeight="medium"
-                fontSize={{ base: 'sm', md: 'md' }}
+                fontSize={{ base: 'md', md: 'md' }}
                 onClick={(e) => {
                   e.preventDefault()
                   handleSmoothScroll('process')
@@ -115,7 +114,7 @@ export default function FloatingNavbar({ isHero = false }: FloatingNavbarProps) 
                 color="gray.600"
                 _hover={{ color: 'gray.800' }}
                 fontWeight="medium"
-                fontSize={{ base: 'sm', md: 'md' }}
+                fontSize={{ base: 'md', md: 'md' }}
                 onClick={(e) => {
                   e.preventDefault()
                   handleSmoothScroll('about')
@@ -141,8 +140,8 @@ export default function FloatingNavbar({ isHero = false }: FloatingNavbarProps) 
               px={{ base: 4, md: 6 }}
               py={2}
               fontWeight="medium"
-              h={{ base: '32px', md: '35px' }}
-              fontSize={{ base: 'sm', md: 'md' }}
+              h={{ base: '36px', md: '35px' }}
+              fontSize={{ base: 'md', md: 'md' }}
               onClick={handleContactClick}
             >
               <Box as="span" display={{ base: 'none', md: 'inline' }}>
@@ -176,23 +175,23 @@ export default function FloatingNavbar({ isHero = false }: FloatingNavbarProps) 
         boxShadow="0 2px 8px rgba(0, 0, 0, 0.06)"
         border="1px solid"
         borderColor="gray.200"
-        px={{ base: 3, md: 4 }}
-        py={{ base: 2, md: 3 }}
+        px={{ base: 4, md: 4 }}
+        py={{ base: 3, md: 3 }}
         display="inline-flex"
         w="fit-content"
         maxW={{ base: 'calc(100vw - 32px)', md: 'none' }}
         minW={{ base: 'auto', md: 'max-content' }}
       >
-        <Flex alignItems="center" justifyContent="space-between" gap={{ base: 3, md: 6 }}>
+        <Flex alignItems="center" justifyContent="space-between" gap={{ base: 4, md: 6 }}>
           {/* Navigation Links */}
-          <HStack spacing={{ base: 3, md: 5 }}>
+          <HStack spacing={{ base: 4, md: 5 }}>
             <Link
               href="#projects"
               color="gray.600"
               _hover={{ color: 'gray.800' }}
               fontWeight="medium"
               whiteSpace="nowrap"
-              fontSize={{ base: 'sm', md: 'md' }}
+              fontSize={{ base: 'md', md: 'md' }}
               onClick={(e) => {
                 e.preventDefault()
                 handleSmoothScroll('projects')
@@ -206,7 +205,7 @@ export default function FloatingNavbar({ isHero = false }: FloatingNavbarProps) 
               _hover={{ color: 'gray.800' }}
               fontWeight="medium"
               whiteSpace="nowrap"
-              fontSize={{ base: 'sm', md: 'md' }}
+              fontSize={{ base: 'md', md: 'md' }}
               onClick={(e) => {
                 e.preventDefault()
                 handleSmoothScroll('process')
@@ -220,7 +219,7 @@ export default function FloatingNavbar({ isHero = false }: FloatingNavbarProps) 
               _hover={{ color: 'gray.800' }}
               fontWeight="medium"
               whiteSpace="nowrap"
-              fontSize={{ base: 'sm', md: 'md' }}
+              fontSize={{ base: 'md', md: 'md' }}
               onClick={(e) => {
                 e.preventDefault()
                 handleSmoothScroll('about')
@@ -247,7 +246,7 @@ export default function FloatingNavbar({ isHero = false }: FloatingNavbarProps) 
             py={2}
             fontWeight="medium"
             h={{ base: '32px', md: '35px' }}
-            fontSize={{ base: 'sm', md: 'md' }}
+            fontSize={{ base: 'md', md: 'md' }}
             whiteSpace="nowrap"
             onClick={handleContactClick}
           >

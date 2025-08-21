@@ -20,6 +20,7 @@ import { useEffect, useRef, useState } from 'react'
 import { getPublicUrl } from '@/lib/storage'
 import Lottie from 'lottie-react'
 
+
 interface ProjectOverlayProps {
   project: {
     dateRange: string
@@ -613,22 +614,27 @@ export default function ProjectOverlay({ project, isOpen, onClose }: ProjectOver
 
                       {/* Lottie Animations */}
                   <VStack spacing={6} align="center" pt={12} w="full" ref={animationsRef} data-section="animations">
-                        <HStack 
-                          spacing={{ base: 6, md: 12, lg: 32 }} 
-                          align="center" 
-                          justify="space-between" 
+                        {/* Responsive grid layout: mobile (stacked), sm+ (3-column) */}
+                        <Box 
                           w="full"
-                          direction={{ base: 'column', lg: 'row' }}
+                          display="grid"
+                          gridTemplateColumns={{
+                            base: "1fr",           // Mobile: single column
+                            sm: "repeat(3, 1fr)"   // sm and up: 3 columns
+                          }}
+                          gap={{ base: 12, sm: 16, lg: 32 }}
+                          alignItems="center"
                         >
                           {/* Animation 1 */}
                           <Box 
-                            w="full"
-                            h={{ base: "300px", md: "500px" }}
+                            w={{ base: "80%", sm: "full" }}
+                            minH={{ base: "300px", sm: "350px", lg: "400px" }}
                             borderRadius="3xl" 
                             overflow="hidden"
                             display="flex"
                             alignItems="center"
                             justifyContent="center"
+                            mx={{ base: "auto", sm: "0" }}
                             onMouseEnter={() => {
                               setIsHovered1(true)
                               if (fluid1Ref.current) fluid1Ref.current.play()
@@ -654,13 +660,14 @@ export default function ProjectOverlay({ project, isOpen, onClose }: ProjectOver
 
                           {/* Animation 2 */}
                           <Box 
-                            w="full"
-                            h={{ base: "300px", md: "500px" }}
+                            w={{ base: "80%", sm: "full" }}
+                            minH={{ base: "300px", sm: "350px", lg: "400px" }}
                             borderRadius="3xl" 
                             overflow="hidden"
                             display="flex"
                             alignItems="center"
                             justifyContent="center"
+                            mx={{ base: "auto", sm: "0" }}
                             onMouseEnter={() => {
                               setIsHovered2(true)
                               if (fluid2Ref.current) fluid2Ref.current.play()
@@ -686,13 +693,14 @@ export default function ProjectOverlay({ project, isOpen, onClose }: ProjectOver
 
                           {/* Animation 3 */}
                           <Box 
-                            w="full"
-                            h={{ base: "300px", md: "500px" }}
+                            w={{ base: "80%", sm: "full" }}
+                            minH={{ base: "300px", sm: "350px", lg: "400px" }}
                             borderRadius="3xl" 
                             overflow="hidden"
                             display="flex"
                             alignItems="center"
                             justifyContent="center"
+                            mx={{ base: "auto", sm: "0" }}
                             onMouseEnter={() => {
                               setIsHovered3(true)
                               if (fluid3Ref.current) fluid3Ref.current.play()
@@ -715,99 +723,328 @@ export default function ProjectOverlay({ project, isOpen, onClose }: ProjectOver
                               <Text fontSize="sm" color="gray.500">Loading animation...</Text>
                             )}
                           </Box>
-                        </HStack>
+                        </Box>
                       </VStack>
 
                       {/* Feature Cards Section */}
-                      <VStack spacing={8} align="center" pt={16} w="full">
-                        <HStack 
-                          spacing={{ base: 6, md: 12, lg: 32 }} 
-                          align="start" 
-                          justify="space-between" 
+                      <VStack spacing={{ base: 12, md: 8, lg: 8 }} align="center" pt={{ base: 20, md: 16, lg: 16 }} w="full">
+                        {/* Mobile: Stacked layout (base) */}
+                        <Box 
                           w="full"
-                          direction={{ base: 'column', lg: 'row' }}
+                          display={{ base: "block", sm: "none", md: "none" }}
                         >
-                          {/* Gamification Card */}
-                          <VStack spacing={4} align="start" w="full">
-                            <Box 
-                              w="full"
-                              borderRadius="3xl" 
-                              overflow="hidden"
-                              boxShadow="lg"
-                              bg="white"
-                            >
-                              <Image
-                                src={getPublicUrl('IMAGES', 'images/gamification.png', 'w=600,h=400,fit=cover,format=webp')}
-                                alt="Gamification feature"
-                                w="full"
-                                h="auto"
-                                objectFit="contain"
-                              />
-                            </Box>
-                            <VStack spacing={2} align="start" w="full">
-                              <Text fontSize="lg" fontWeight="semibold" color="gray.800">
-                                Gamification
-                              </Text>
-                              <Text fontSize="md" color="gray.700" lineHeight="1.6" fontWeight="normal">
-                                Use of patient-centric gamification to improve patient engagement by making their experience more personalized.
-                              </Text>
+                          <VStack spacing={12} align="center" w="full">
+                            {/* Gamification Card - Mobile */}
+                            <VStack spacing={6} align="center" w="full">
+                              <Box 
+                                w="80%"
+                                borderRadius="3xl" 
+                                overflow="hidden"
+                                boxShadow="lg"
+                                bg="white"
+                                mx="auto"
+                              >
+                                <Image
+                                  src={getPublicUrl('IMAGES', 'images/gamification.png', 'w=600,h=400,fit=cover,format=webp')}
+                                  alt="Gamification feature"
+                                  w="full"
+                                  h="auto"
+                                  objectFit="contain"
+                                />
+                              </Box>
+                              <VStack spacing={3} align="center" w="80%" mx="auto" textAlign="center">
+                                <Text fontSize="lg" fontWeight="semibold" color="gray.800">
+                                  Gamification
+                                </Text>
+                                <Text fontSize="md" color="gray.700" lineHeight="1.8" fontWeight="normal">
+                                  Use of patient-centric gamification to improve patient engagement by making their experience more personalized.
+                                </Text>
+                              </VStack>
                             </VStack>
-                          </VStack>
 
-                          {/* Customization Card */}
-                          <VStack spacing={4} align="start" w="full">
-                            <Box 
-                              w="full"
-                              borderRadius="3xl" 
-                              overflow="hidden"
-                              boxShadow="lg"
-                              bg="white"
-                            >
-                              <Image
-                                src={getPublicUrl('IMAGES', 'images/customization.png', 'w=600,h=400,fit=cover,format=webp')}
-                                alt="Customization feature"
-                                w="full"
-                                h="auto"
-                                objectFit="contain"
-                              />
-                            </Box>
-                            <VStack spacing={2} align="start" w="full">
-                              <Text fontSize="lg" fontWeight="semibold" color="gray.800">
-                                Customization
-                              </Text>
-                              <Text fontSize="md" color="gray.700" lineHeight="1.6" fontWeight="normal">
-                                Customization allows our patients to optimize their experience with the feature, and also giving them the sense of control.
-                              </Text>
+                            {/* Customization Card - Mobile */}
+                            <VStack spacing={6} align="center" w="full">
+                              <Box 
+                                w="80%"
+                                borderRadius="3xl" 
+                                overflow="hidden"
+                                boxShadow="lg"
+                                bg="white"
+                                mx="auto"
+                              >
+                                <Image
+                                  src={getPublicUrl('IMAGES', 'images/customization.png', 'w=600,h=400,fit=cover,format=webp')}
+                                  alt="Customization feature"
+                                  w="full"
+                                  h="auto"
+                                  objectFit="contain"
+                                />
+                              </Box>
+                              <VStack spacing={3} align="center" w="80%" mx="auto" textAlign="center">
+                                <Text fontSize="lg" fontWeight="semibold" color="gray.800">
+                                  Customization
+                                </Text>
+                                <Text fontSize="md" color="gray.700" lineHeight="1.8" fontWeight="normal">
+                                  Customization allows our patients to optimize their experience with the feature, and also giving them the sense of control.
+                                </Text>
+                              </VStack>
                             </VStack>
-                          </VStack>
 
-                          {/* Guidance Card */}
-                          <VStack spacing={4} align="start" w="full">
-                            <Box 
-                              w="full"
-                              borderRadius="3xl" 
-                              overflow="hidden"
-                              boxShadow="lg"
-                              bg="white"
-                            >
-                              <Image
-                                src={getPublicUrl('IMAGES', 'images/guidelines.png', 'w=600,h=400,fit=cover,format=webp')}
-                                alt="Guidelines feature"
-                                w="full"
-                                h="auto"
-                                objectFit="contain"
-                              />
-                            </Box>
-                            <VStack spacing={2} align="start" w="full">
-                              <Text fontSize="lg" fontWeight="semibold" color="gray.800">
-                                Guidelines
-                              </Text>
-                              <Text fontSize="md" color="gray.700" lineHeight="1.6" fontWeight="normal">
-                                Provide the patient successively with guidance through daily tips on how they can more easily manage their fluid intake.
-                              </Text>
+                            {/* Guidance Card - Mobile */}
+                            <VStack spacing={6} align="center" w="full">
+                              <Box 
+                                w="80%"
+                                borderRadius="3xl" 
+                                overflow="hidden"
+                                boxShadow="lg"
+                                bg="white"
+                                mx="auto"
+                              >
+                                <Image
+                                  src={getPublicUrl('IMAGES', 'images/guidelines.png', 'w=600,h=400,fit=cover,format=webp')}
+                                  alt="Guidelines feature"
+                                  w="full"
+                                  h="auto"
+                                  objectFit="contain"
+                                />
+                              </Box>
+                              <VStack spacing={3} align="center" w="80%" mx="auto" textAlign="center">
+                                <Text fontSize="lg" fontWeight="semibold" color="gray.800">
+                                  Guidelines
+                                </Text>
+                                <Text fontSize="md" color="gray.700" lineHeight="1.8" fontWeight="normal">
+                                  Provide the patient successively with guidance through daily tips on how they can more easily manage their fluid intake.
+                                </Text>
+                              </VStack>
                             </VStack>
                           </VStack>
-                        </HStack>
+                        </Box>
+
+                        {/* sm: Side-by-side layout (image left, text right) */}
+                        <Box 
+                          w="full"
+                          display={{ base: "none", sm: "block", md: "none" }}
+                        >
+                          <VStack spacing={8} align="stretch" w="full">
+                            {/* Gamification Card - Side by side */}
+                            <Box 
+                              display="grid"
+                              gridTemplateColumns="0.3fr 0.7fr"
+                              gap={6}
+                              alignItems="center"
+                              minH="200px"
+                            >
+                              <Box 
+                                w="full"
+                                borderRadius="3xl" 
+                                overflow="hidden"
+                                boxShadow="lg"
+                                bg="white"
+                                display="flex"
+                                alignItems="center"
+                                justifyContent="center"
+                              >
+                                <Image
+                                  src={getPublicUrl('IMAGES', 'images/gamification.png', 'w=600,h=400,fit=cover,format=webp')}
+                                  alt="Gamification feature"
+                                  w="full"
+                                  h="full"
+                                  objectFit="contain"
+                                />
+                              </Box>
+                              <VStack spacing={4} align="start" justify="center" h="full">
+                                <Text fontSize="lg" fontWeight="semibold" color="gray.800">
+                                  Gamification
+                                </Text>
+                                <Text fontSize="md" color="gray.700" lineHeight="1.8" fontWeight="normal">
+                                  Use of patient-centric gamification to improve patient engagement by making their experience more personalized.
+                                </Text>
+                              </VStack>
+                            </Box>
+
+                            {/* Customization Card - Side by side */}
+                            <Box 
+                              display="grid"
+                              gridTemplateColumns="0.3fr 0.7fr"
+                              gap={6}
+                              alignItems="center"
+                              minH="200px"
+                            >
+                              <Box 
+                                w="full"
+                                borderRadius="3xl" 
+                                overflow="hidden"
+                                boxShadow="lg"
+                                bg="white"
+                                display="flex"
+                                alignItems="center"
+                                justifyContent="center"
+                              >
+                                <Image
+                                  src={getPublicUrl('IMAGES', 'images/customization.png', 'w=600,h=400,fit=cover,format=webp')}
+                                  alt="Customization feature"
+                                  w="full"
+                                  h="full"
+                                  objectFit="contain"
+                                />
+                              </Box>
+                              <VStack spacing={4} align="start" justify="center" h="full">
+                                <Text fontSize="lg" fontWeight="semibold" color="gray.800">
+                                  Customization
+                                </Text>
+                                <Text fontSize="md" color="gray.700" lineHeight="1.8" fontWeight="normal">
+                                  Customization allows our patients to optimize their experience with the feature, and also giving them the sense of control.
+                                </Text>
+                              </VStack>
+                            </Box>
+
+                            {/* Guidance Card - Side by side */}
+                            <Box 
+                              display="grid"
+                              gridTemplateColumns="0.3fr 0.7fr"
+                              gap={6}
+                              alignItems="center"
+                              minH="200px"
+                            >
+                              <Box 
+                                w="full"
+                                borderRadius="3xl" 
+                                overflow="hidden"
+                                boxShadow="lg"
+                                bg="white"
+                                display="flex"
+                                alignItems="center"
+                                justifyContent="center"
+                              >
+                                <Image
+                                  src={getPublicUrl('IMAGES', 'images/guidelines.png', 'w=600,h=400,fit=cover,format=webp')}
+                                  alt="Guidelines feature"
+                                  w="full"
+                                  h="full"
+                                  objectFit="contain"
+                                />
+                              </Box>
+                              <VStack spacing={4} align="start" justify="center" h="full">
+                                <Text fontSize="lg" fontWeight="semibold" color="gray.800">
+                                  Guidelines
+                                </Text>
+                                <Text fontSize="md" color="gray.700" lineHeight="1.8" fontWeight="normal">
+                                  Provide the patient successively with guidance through daily tips on how they can more easily manage their fluid intake.
+                                </Text>
+                              </VStack>
+                            </Box>
+                          </VStack>
+                        </Box>
+
+                        {/* md and up: 3-column grid layout */}
+                        <Box 
+                          w="full"
+                          display={{ base: "none", sm: "none", md: "block" }}
+                        >
+                          <Box 
+                            w="full"
+                            display="grid"
+                            gridTemplateColumns={{
+                              base: "1fr",           // Mobile: single column
+                              md: "repeat(3, 1fr)"   // md and up: 3 columns
+                            }}
+                            gap={{ base: 12, md: 16, lg: 32 }}
+                            alignItems="start"
+                          >
+                            {/* Gamification Card - 3-column */}
+                            <VStack spacing={6} align="start" w="full">
+                              <Box 
+                                w="full"
+                                borderRadius="3xl" 
+                                overflow="hidden"
+                                boxShadow="lg"
+                                bg="white"
+                                display="flex"
+                                alignItems="center"
+                                justifyContent="center"
+                                aspectRatio="1"
+                              >
+                                <Image
+                                  src={getPublicUrl('IMAGES', 'images/gamification.png', 'w=600,h=400,fit=cover,format=webp')}
+                                  alt="Gamification feature"
+                                  w="full"
+                                  h="full"
+                                  objectFit="contain"
+                                />
+                              </Box>
+                              <VStack spacing={3} align="start" w="full">
+                                <Text fontSize="lg" fontWeight="semibold" color="gray.800">
+                                  Gamification
+                                </Text>
+                                <Text fontSize="md" color="gray.700" lineHeight="1.8" fontWeight="normal">
+                                  Use of patient-centric gamification to improve patient engagement by making their experience more personalized.
+                                </Text>
+                              </VStack>
+                            </VStack>
+
+                            {/* Customization Card - 3-column */}
+                            <VStack spacing={6} align="start" w="full">
+                              <Box 
+                                w="full"
+                                borderRadius="3xl" 
+                                overflow="hidden"
+                                boxShadow="lg"
+                                bg="white"
+                                display="flex"
+                                alignItems="center"
+                                justifyContent="center"
+                                aspectRatio="1"
+                              >
+                                <Image
+                                  src={getPublicUrl('IMAGES', 'images/customization.png', 'w=600,h=400,fit=cover,format=webp')}
+                                  alt="Customization feature"
+                                  w="full"
+                                  h="full"
+                                  objectFit="contain"
+                                />
+                              </Box>
+                              <VStack spacing={3} align="start" w="full">
+                                <Text fontSize="lg" fontWeight="semibold" color="gray.800">
+                                  Customization
+                                </Text>
+                                <Text fontSize="md" color="gray.700" lineHeight="1.8" fontWeight="normal">
+                                  Customization allows our patients to optimize their experience with the feature, and also giving them the sense of control.
+                                </Text>
+                              </VStack>
+                            </VStack>
+
+                            {/* Guidance Card - 3-column */}
+                            <VStack spacing={6} align="start" w="full">
+                              <Box 
+                                w="full"
+                                borderRadius="3xl" 
+                                overflow="hidden"
+                                boxShadow="lg"
+                                bg="white"
+                                display="flex"
+                                alignItems="center"
+                                justifyContent="center"
+                                aspectRatio="1"
+                              >
+                                <Image
+                                  src={getPublicUrl('IMAGES', 'images/guidelines.png', 'w=600,h=400,fit=cover,format=webp')}
+                                  alt="Guidelines feature"
+                                  w="full"
+                                  h="full"
+                                  objectFit="contain"
+                                />
+                              </Box>
+                              <VStack spacing={3} align="start" w="full">
+                                <Text fontSize="lg" fontWeight="semibold" color="gray.800">
+                                  Guidelines
+                                </Text>
+                                <Text fontSize="md" color="gray.700" lineHeight="1.8" fontWeight="normal">
+                                  Provide the patient successively with guidance through daily tips on how they can more easily manage their fluid intake.
+                                </Text>
+                              </VStack>
+                            </VStack>
+                          </Box>
+                        </Box>
                       </VStack>
                 </Box>
 
@@ -1017,9 +1254,9 @@ export default function ProjectOverlay({ project, isOpen, onClose }: ProjectOver
                 <VStack spacing={12} align="center" pt={16} w="full">
                   {/* Webshop Video */}
                   <Box w="full" borderRadius="xl" overflow="hidden" position="relative">
-                    <video
-                      controls
-                      preload="metadata"
+                    <video 
+                      controls 
+                      preload="metadata" 
                       style={{
                         width: '100%',
                         height: 'auto',
@@ -1033,9 +1270,9 @@ export default function ProjectOverlay({ project, isOpen, onClose }: ProjectOver
 
                   {/* Register Product Video */}
                   <Box w="full" borderRadius="xl" overflow="hidden" position="relative">
-                    <video
-                      controls
-                      preload="metadata"
+                    <video 
+                      controls 
+                      preload="metadata" 
                       style={{
                         width: '100%',
                         height: 'auto',
@@ -1263,9 +1500,9 @@ export default function ProjectOverlay({ project, isOpen, onClose }: ProjectOver
                 <VStack spacing={12} align="center" pt={16} w="full">
                   {/* Video */}
                   <Box w="full" borderRadius="xl" overflow="hidden" position="relative">
-                    <video
-                      controls
-                      preload="metadata"
+                    <video 
+                      controls 
+                      preload="metadata" 
                       style={{
                         width: '100%',
                         height: 'auto',
@@ -1478,7 +1715,15 @@ export default function ProjectOverlay({ project, isOpen, onClose }: ProjectOver
                 {/* Video Section */}
                 <VStack spacing={12} align="center" pt={16} w="full">
                   <Box w="full" borderRadius="xl" overflow="hidden" position="relative">
-                    <video controls preload="metadata" style={{ width: '100%', height: 'auto', display: 'block' }}>
+                    <video 
+                      controls 
+                      preload="metadata" 
+                      style={{
+                        width: '100%',
+                        height: 'auto',
+                        display: 'block'
+                      }}
+                    >
                       <source src={getPublicUrl('VIDEOS', 'movies/modity_web.mp4', 'quality=80,format=mp4')} type="video/mp4" />
                       Your browser does not support the video tag.
                     </video>
