@@ -2,7 +2,6 @@
 
 import { Box, useColorModeValue, Text, VStack } from '@chakra-ui/react'
 import { useState, useRef, useEffect } from 'react'
-import ReactPlayer from 'react-player'
 import { getPublicUrl } from '@/lib/storage'
 
 interface EnhancedVideoPlayerProps {
@@ -45,7 +44,7 @@ export default function EnhancedVideoPlayer({
   const [hasError, setHasError] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [thumbnailUrl, setThumbnailUrl] = useState<string>('')
-  const playerRef = useRef<any>(null)
+  const playerRef = useRef<HTMLVideoElement>(null)
   
   const bgColor = useColorModeValue('gray.100', 'gray.800')
   const borderColor = useColorModeValue('gray.200', 'gray.700')
@@ -185,34 +184,26 @@ export default function EnhancedVideoPlayer({
           aspectRatio: aspectRatio
         }}
       >
-        <ReactPlayer
+        <video
           ref={playerRef}
-          url={videoUrl}
+          src={videoUrl}
           width="100%"
           height="100%"
           controls={controls}
-          light={light && thumbnailUrl ? thumbnailUrl : false}
-          playIcon={playIcon || defaultPlayIcon}
+          poster={light && thumbnailUrl ? thumbnailUrl : undefined}
           onPlay={handlePlay}
           onPause={handlePause}
           onError={handleError}
-          onReady={handleReady}
-          playing={autoPlay}
+          onLoadedData={handleReady}
+          autoPlay={autoPlay}
           muted={muted}
           loop={loop}
-          config={{
-            file: {
-              attributes: {
-                poster: thumbnailUrl,
-                preload: 'metadata',
-                ...config.file?.attributes
-              },
-              ...config.file
-            },
-            ...config
-          }}
+          preload="metadata"
           style={{
-            borderRadius: '12px'
+            borderRadius: '12px',
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover'
           }}
         />
         

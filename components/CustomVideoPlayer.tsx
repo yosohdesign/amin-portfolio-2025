@@ -2,7 +2,6 @@
 
 import { Box, useColorModeValue } from '@chakra-ui/react'
 import { useState, useRef, useEffect } from 'react'
-import ReactPlayer from 'react-player'
 import { getPublicUrl } from '@/lib/storage'
 
 interface CustomVideoPlayerProps {
@@ -33,7 +32,7 @@ export default function CustomVideoPlayer({
   const [isClient, setIsClient] = useState(false)
   const [isPlaying, setIsPlaying] = useState(false)
   const [hasError, setHasError] = useState(false)
-  const playerRef = useRef<any>(null)
+  const playerRef = useRef<HTMLVideoElement>(null)
   
   const bgColor = useColorModeValue('gray.100', 'gray.800')
   const borderColor = useColorModeValue('gray.200', 'gray.700')
@@ -107,59 +106,22 @@ export default function CustomVideoPlayer({
       bg="black"
       boxShadow="lg"
     >
-      <ReactPlayer
+      <video
         ref={playerRef}
-        url={videoUrl}
+        src={videoUrl}
         width="100%"
         height="100%"
         controls={controls}
-        light={light ? thumbnailUrl : false}
-        playIcon={playIcon || (
-          <Box
-            position="absolute"
-            top="50%"
-            left="50%"
-            transform="translate(-50%, -50%)"
-            bg="rgba(0, 0, 0, 0.7)"
-            borderRadius="full"
-            w="80px"
-            h="80px"
-            display="flex"
-            alignItems="center"
-            justifyContent="center"
-            cursor="pointer"
-            transition="all 0.3s ease"
-            _hover={{
-              bg: 'rgba(0, 0, 0, 0.9)',
-              transform: 'translate(-50%, -50%) scale(1.1)'
-            }}
-          >
-            <Box
-              w="0"
-              h="0"
-              borderStyle="solid"
-              borderWidth="20px 0 20px 32px"
-              borderColor="transparent transparent transparent white"
-              ml="4px"
-            />
-          </Box>
-        )}
+        poster={light ? thumbnailUrl : undefined}
         onPlay={handlePlay}
         onPause={handlePause}
         onError={handleError}
-        config={{
-          file: {
-            attributes: {
-              poster: thumbnailUrl,
-              preload: 'metadata',
-              ...config.file?.attributes
-            },
-            ...config.file
-          },
-          ...config
-        }}
+        preload="metadata"
         style={{
-          borderRadius: '12px'
+          borderRadius: '12px',
+          width: '100%',
+          height: '100%',
+          objectFit: 'cover'
         }}
       />
       
