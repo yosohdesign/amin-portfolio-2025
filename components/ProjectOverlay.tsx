@@ -213,14 +213,65 @@ export default function ProjectOverlay({ project, isOpen, onClose }: ProjectOver
       }
     }
 
+    // Prevent touch scrolling on background elements when overlay is open
+    const preventBackgroundScroll = (e: TouchEvent) => {
+      // Only prevent scrolling on elements outside the overlay
+      const target = e.target as Element
+      if (!target.closest('[data-overlay-container]')) {
+        e.preventDefault()
+        e.stopPropagation()
+      }
+    }
+
+    // Prevent wheel scrolling on background elements
+    const preventBackgroundWheel = (e: WheelEvent) => {
+      const target = e.target as Element
+      if (!target.closest('[data-overlay-container]')) {
+        e.preventDefault()
+        e.stopPropagation()
+      }
+    }
+
     if (isOpen) {
       document.addEventListener('keydown', handleEscape)
-      document.body.style.overflow = 'hidden'
+      document.addEventListener('touchmove', preventBackgroundScroll, { passive: false })
+      document.addEventListener('wheel', preventBackgroundWheel, { passive: false })
+      
+      // Enhanced body lock for mobile
+      const scrollY = window.scrollY
+      const body = document.body
+      
+      // Store current scroll position and lock body
+      body.style.position = 'fixed'
+      body.style.top = `-${scrollY}px`
+      body.style.width = '100%'
+      body.style.overflow = 'hidden'
+      body.style.touchAction = 'none'
+      
+      // Store scroll position for restoration
+      body.dataset.scrollY = scrollY.toString()
     }
 
     return () => {
       document.removeEventListener('keydown', handleEscape)
-      document.body.style.overflow = 'unset'
+      document.removeEventListener('touchmove', preventBackgroundScroll)
+      document.removeEventListener('wheel', preventBackgroundWheel)
+      
+      // Restore scroll position and body styles
+      const body = document.body
+      const scrollY = body.dataset.scrollY
+      
+      if (scrollY) {
+        body.style.position = ''
+        body.style.top = ''
+        body.style.width = ''
+        body.style.overflow = ''
+        body.style.touchAction = ''
+        
+        // Restore scroll position
+        window.scrollTo(0, parseInt(scrollY))
+        delete body.dataset.scrollY
+      }
     }
   }, [isOpen, handleClose])
 
@@ -241,13 +292,15 @@ export default function ProjectOverlay({ project, isOpen, onClose }: ProjectOver
           bottom={0}
           zIndex={1000}
           onClick={handleBackdropClick}
-          style={{
-            width: '100vw',
-            height: '100vh',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
+                  style={{
+          width: '100vw',
+          height: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          overscrollBehavior: 'none',
+          touchAction: 'none',
+        }}
         >
           {/* White backdrop that fades in/out */}
       <Box
@@ -302,7 +355,12 @@ export default function ProjectOverlay({ project, isOpen, onClose }: ProjectOver
         opacity={isClosing ? 1 : 0}
         transform={isClosing ? "scale(1) translateY(0)" : "scale(0.95)"}
         animation={isClosing ? "slideOut 0.3s ease-in forwards" : "slideIn 0.5s ease-out forwards"}
+        data-overlay-container
         sx={{
+          // Smooth scrolling for overlay content
+          WebkitOverflowScrolling: 'touch',
+          overscrollBehavior: 'contain',
+          // Animation keyframes
           '@keyframes slideIn': {
             '0%': { 
               opacity: 0, 

@@ -14,7 +14,6 @@ export default function ProjectsSection() {
   const projectRefs = useRef<(HTMLDivElement | null)[]>([])
   const [selectedProject, setSelectedProject] = useState<typeof projects[0] | null>(null)
   const [isVisible, setIsVisible] = useState(false)
-  const [visibleCards, setVisibleCards] = useState<boolean[]>([])
   const sectionRef = useRef<HTMLDivElement>(null)
 
   const projects = [
@@ -56,13 +55,13 @@ export default function ProjectsSection() {
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
-          // Add a small delay to ensure the animation is visible
-          setTimeout(() => setIsVisible(true), 100)
+          // Reduced delay for faster response on mobile
+          setTimeout(() => setIsVisible(true), 50)
         }
       },
       {
-        threshold: 0.2,
-        rootMargin: '0px 0px -50px 0px'
+        threshold: 0.1, // Reduced from 0.2 to 0.1 for earlier trigger
+        rootMargin: '0px 0px -30px 0px' // Reduced from -50px for earlier trigger
       }
     )
 
@@ -72,32 +71,6 @@ export default function ProjectsSection() {
 
     return () => observer.disconnect()
   }, [])
-
-  // Initialize visibleCards array with staggered timing when section becomes visible
-  useEffect(() => {
-    if (isVisible) {
-      // Title appears first (immediately)
-      // First card appears after a short delay
-      setTimeout(() => {
-        setVisibleCards(prev => {
-          const newVisible = new Array(projects.length).fill(false)
-          newVisible[0] = true
-          return newVisible
-        })
-      }, 200) // Reduced from 300ms to 200ms
-
-      // Stagger the remaining cards with shorter intervals
-      projects.slice(1).forEach((_, index) => {
-        setTimeout(() => {
-          setVisibleCards(prev => {
-            const newVisible = [...prev]
-            newVisible[index + 1] = true
-            return newVisible
-          })
-        }, 400 + (index * 150)) // 400ms, 550ms, 700ms delays (reduced from 200ms to 150ms intervals)
-      })
-    }
-  }, [isVisible, projects.length])
 
   return (
     <Box py={20} pt={48} bg="white" id="projects" ref={sectionRef}>
@@ -113,18 +86,14 @@ export default function ProjectsSection() {
               fontSize={{ base: '3xl', md: '3xl', lg: '4xl', xl: '5xl' }}
               opacity={isVisible ? 1 : 0}
               transform={isVisible ? 'translateY(0)' : 'translateY(30px)'}
-              transition="opacity 1s ease-out, transform 1s ease-out"
+              transition="opacity 0.6s ease-out, transform 0.6s ease-out"
             >
               Selected work & Projects
             </Heading>
           </VStack>
 
           {/* Featured Project Card */}
-          <Box
-            opacity={visibleCards[0] ? 1 : 0}
-            transform={visibleCards[0] ? 'translateY(0)' : 'translateY(30px)'}
-            transition="opacity 0.7s ease-out, transform 0.7s ease-out"
-          >
+          <Box>
             <ProjectCard
               ref={(el) => { projectRefs.current[0] = el }}
               {...projects[0]}
@@ -136,12 +105,7 @@ export default function ProjectsSection() {
           {/* Additional Case Study Cards */}
           <VStack spacing={12} align="stretch">
             {projects.slice(1).map((project, index) => (
-              <Box
-                key={index + 1}
-                opacity={visibleCards[index + 1] ? 1 : 0}
-                transform={visibleCards[index + 1] ? 'translateY(0)' : 'translateY(30px)'}
-                transition="opacity 0.7s ease-out, transform 0.7s ease-out"
-              >
+              <Box key={index + 1}>
                 <ProjectCard
                   ref={(el) => { projectRefs.current[index + 1] = el }}
                   {...project}
