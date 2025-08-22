@@ -121,7 +121,7 @@ export default function AboutSection() {
                   }
                 }}
               >
-                UX/UI Designer
+                Always a designer
               </Heading>
               
               <Text
@@ -142,10 +142,7 @@ export default function AboutSection() {
                   }
                 }}
               >
-                Dedicated to creative problem-solving and committed to crafting genuine user experiences. 
-                I focus on simplifying complex processes and user journeys, turning them into innovative and modern solutions. 
-                With over 8 years of experience, I've worked on diverse projects spanning IoT, healthcare, e-commerce, 
-                internal tools, and B2B platforms, most recently contributing to audio software management systems.
+                I've spent over 8 years designing digital products that turn complexity into clarity. My experience spans IoT, healthcare, e-commerce, internal tools, B2B platforms, and most recently audio software management systems, where my work also touched on hardware design. Beyond solving problems, I focus on making products that feel practical and pleasant to use.
               </Text>
               
               <Text
@@ -166,9 +163,7 @@ export default function AboutSection() {
                   }
                 }}
               >
-                Outside of work, you'll find me exploring my love for creativity through various avenues. 
-                In the past, I channeled my problem-solving skills into music production, striving to achieve specific sounds. 
-                Today, as a UX/UI designer, my goal is to positively impact a wider audience by crafting desired user experiences.
+                Outside of work, I enjoy life with my wife and two kids. I like to challenge myself, both personally and professionally, and I'm drawn to opportunities where I can keep learning and growing. Working remotely suits me well, as it allows me to balance focus and flexibility while staying connected to diverse teams.
               </Text>
               
               <Button
