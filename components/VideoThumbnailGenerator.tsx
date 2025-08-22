@@ -42,7 +42,7 @@ export default function VideoThumbnailGenerator({
         const supabaseThumbnail = getPublicUrl(bucket, videoPath, 'w=800,h=450,fit=cover,format=webp')
         
         // Test if the thumbnail loads
-        const img = new Image()
+        const img = document.createElement('img')
         img.onload = () => {
           setThumbnailUrl(supabaseThumbnail)
           setIsLoading(false)
