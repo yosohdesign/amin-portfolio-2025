@@ -35,15 +35,22 @@ interface ProjectOverlayProps {
 }
 
 export default function ProjectOverlay({ project, isOpen, onClose }: ProjectOverlayProps) {
+  // Mobile Performance Optimizations:
+  // - Single intersection observer instead of multiple
+  // - Hardware acceleration with translateZ(0)
+  // - Reduced animation complexity on mobile
+  // - Optimized CSS properties for mobile scrolling
+  // - Touch-friendly scroll behavior
+  
   const cardBg = useColorModeValue('white', 'white')
-  const tlDrRef = useRef(null)
-  const backgroundRef = useRef(null)
-  const roleRef = useRef(null)
-  const toolsRef = useRef(null)
-  const challengeRef = useRef(null)
-  const processRef = useRef(null)
-  const resultsRef = useRef(null)
-  const conclusionRef = useRef(null)
+  const tlDrRef = useRef<HTMLDivElement>(null)
+  const backgroundRef = useRef<HTMLDivElement>(null)
+  const roleRef = useRef<HTMLDivElement>(null)
+  const toolsRef = useRef<HTMLDivElement>(null)
+  const challengeRef = useRef<HTMLDivElement>(null)
+  const processRef = useRef<HTMLDivElement>(null)
+  const resultsRef = useRef<HTMLDivElement>(null)
+  const conclusionRef = useRef<HTMLDivElement>(null)
   
   const [fluid1Animation, setFluid1Animation] = useState(null)
   const [fluid2Animation, setFluid2Animation] = useState(null)
@@ -72,6 +79,28 @@ export default function ProjectOverlay({ project, isOpen, onClose }: ProjectOver
   const [resultsInView, setResultsInView] = useState(false)
   const [conclusionInView, setConclusionInView] = useState(false)
 
+  // Optimized intersection observer for mobile performance
+  const observerRef = useRef<IntersectionObserver | null>(null)
+
+  // Mobile detection for performance optimization
+  const [isMobile, setIsMobile] = useState(false)
+  
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768)
+    }
+    
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
+
+  // Helper function for mobile-optimized transitions
+  const getMobileTransition = (desktopTransition: string, mobileTransition: string = "opacity 0.3s ease-out") => {
+    return isMobile ? mobileTransition : desktopTransition
+  }
+
   // Handle closing animation
   const handleClose = () => {
     setIsClosing(true)
@@ -80,6 +109,8 @@ export default function ProjectOverlay({ project, isOpen, onClose }: ProjectOver
       onClose()
     }, 300) // Match the animation duration
   }
+
+
 
   // Reset closing state when overlay opens
   useEffect(() => {
@@ -206,6 +237,55 @@ export default function ProjectOverlay({ project, isOpen, onClose }: ProjectOver
     }
   }, [])
 
+
+
+  // Simplified intersection observer for mobile performance
+  useEffect(() => {
+    const sectionRefs = [
+      { ref: tlDrRef, setter: setTlDrInView },
+      { ref: backgroundRef, setter: setBackgroundInView },
+      { ref: roleRef, setter: setRoleInView },
+      { ref: toolsRef, setter: setToolsInView },
+      { ref: challengeRef, setter: setChallengeInView },
+      { ref: processRef, setter: setProcessInView },
+      { ref: resultsRef, setter: setResultsInView },
+      { ref: conclusionRef, setter: setConclusionInView }
+    ]
+
+    // Create single observer for better mobile performance
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        entries.forEach(entry => {
+          const sectionKey = entry.target.getAttribute('data-section')
+          if (sectionKey) {
+            const section = sectionRefs.find(s => s.ref.current === entry.target)
+            if (section && entry.isIntersecting) {
+              section.setter(true)
+            }
+          }
+        })
+      },
+      { 
+        threshold: 0.1, 
+        rootMargin: '-50px'
+      }
+    )
+
+    // Observe all sections
+    sectionRefs.forEach(({ ref, setter }, index) => {
+      if (ref.current) {
+        ref.current.setAttribute('data-section', `section-${index}`)
+        observerRef.current?.observe(ref.current)
+      }
+    })
+
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect()
+      }
+    }
+  }, [])
+
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -213,29 +293,44 @@ export default function ProjectOverlay({ project, isOpen, onClose }: ProjectOver
       }
     }
 
-    // Prevent touch scrolling on background elements when overlay is open
-    const preventBackgroundScroll = (e: TouchEvent) => {
-      // Only prevent scrolling on elements outside the overlay
-      const target = e.target as Element
-      if (!target.closest('[data-overlay-container]')) {
-        e.preventDefault()
-        e.stopPropagation()
-      }
+      // Optimized scroll prevention using CSS instead of event blocking
+  const preventBackgroundScroll = (e: TouchEvent) => {
+    // Early return if already locked to avoid unnecessary processing
+    if (document.body.dataset.scrollLocked) return
+    
+    const target = e.target as Element
+    if (!target.closest('[data-overlay-container]')) {
+      // Use CSS-based prevention instead of preventDefault for better performance
+      const body = document.body
+      body.dataset.scrollLocked = 'true'
+      body.style.overflow = 'hidden'
+      body.style.position = 'fixed'
+      body.style.top = `-${window.scrollY}px`
+      body.style.width = '100%'
     }
+  }
 
-    // Prevent wheel scrolling on background elements
-    const preventBackgroundWheel = (e: WheelEvent) => {
-      const target = e.target as Element
-      if (!target.closest('[data-overlay-container]')) {
-        e.preventDefault()
-        e.stopPropagation()
-      }
+  // Optimized wheel prevention using CSS
+  const preventBackgroundWheel = (e: WheelEvent) => {
+    // Early return if already locked to avoid unnecessary processing
+    if (document.body.dataset.scrollLocked) return
+    
+    const target = e.target as Element
+    if (!target.closest('[data-overlay-container]')) {
+      // Use CSS-based prevention instead of preventDefault for better performance
+      const body = document.body
+      body.dataset.scrollLocked = 'true'
+      body.style.overflow = 'hidden'
+      body.style.position = 'fixed'
+      body.style.top = `-${window.scrollY}px`
+      body.style.width = '100%'
     }
+  }
 
     if (isOpen) {
       document.addEventListener('keydown', handleEscape)
-      document.addEventListener('touchmove', preventBackgroundScroll, { passive: false })
-      document.addEventListener('wheel', preventBackgroundWheel, { passive: false })
+      document.addEventListener('touchmove', preventBackgroundScroll, { passive: true })
+      document.addEventListener('wheel', preventBackgroundWheel, { passive: true })
       
       // Enhanced body lock for mobile
       const scrollY = window.scrollY
@@ -267,6 +362,7 @@ export default function ProjectOverlay({ project, isOpen, onClose }: ProjectOver
         body.style.width = ''
         body.style.overflow = ''
         body.style.touchAction = ''
+        delete body.dataset.scrollLocked
         
         // Restore scroll position
         window.scrollTo(0, parseInt(scrollY))
@@ -300,6 +396,9 @@ export default function ProjectOverlay({ project, isOpen, onClose }: ProjectOver
           justifyContent: 'center',
           overscrollBehavior: 'none',
           touchAction: 'none',
+          // Performance optimizations for mobile
+          WebkitTransform: 'translateZ(0)', // Force hardware acceleration
+          transform: 'translateZ(0)', // Force hardware acceleration
         }}
         >
           {/* White backdrop that fades in/out */}
@@ -357,9 +456,19 @@ export default function ProjectOverlay({ project, isOpen, onClose }: ProjectOver
         animation={isClosing ? "slideOut 0.3s ease-in forwards" : "slideIn 0.5s ease-out forwards"}
         data-overlay-container
         sx={{
-          // Smooth scrolling for overlay content
+          // Optimized scrolling for overlay content
           WebkitOverflowScrolling: 'touch',
           overscrollBehavior: 'contain',
+          touchAction: 'pan-y', // Allow vertical scrolling only
+          willChange: 'transform', // Optimize for animations
+          // Mobile performance optimizations
+          WebkitTransform: 'translateZ(0)', // Force hardware acceleration
+          transform: 'translateZ(0)', // Force hardware acceleration
+          backfaceVisibility: 'hidden', // Prevent flickering
+          perspective: '1000px', // Optimize 3D transforms
+          // Additional mobile optimizations
+          WebkitBackfaceVisibility: 'hidden',
+          WebkitPerspective: '1000px',
           // Animation keyframes
           '@keyframes slideIn': {
             '0%': { 
@@ -504,6 +613,7 @@ export default function ProjectOverlay({ project, isOpen, onClose }: ProjectOver
               <VStack align="start" spacing={12} pt={16} pb={20} w="full" maxW="1000px" mx="auto">
                 {project.title === 'Engaging health tracking' ? (
                   <>
+                    
                     {/* TL;DR Section */}
                 <Box
                       ref={tlDrRef}
@@ -524,7 +634,7 @@ export default function ProjectOverlay({ project, isOpen, onClose }: ProjectOver
                           TL;DR
                         </Text>
                         <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.7" fontWeight="normal">
-                          I designed and delivered a <Text as="span" fontWeight="semibold" color="gray.900">fluid intake tracker</Text> for the patient app, enabling dialysis patients to monitor their daily intake in a <Text as="span" fontWeight="semibold" color="gray.900">motivating, user-friendly way</Text>. Using Figma, design systems, and remote-first collaboration, I worked closely with engineers, stakeholders, and healthcare professionals to co-create the solution. Despite pandemic restrictions, we managed remote user testing with nurses and patients, and the feature launched with <Text as="span" fontWeight="semibold" color="gray.900">highly positive feedback</Text>.
+                          I created a fluid intake tracker for the d.CARE app that made daily monitoring easier and more engaging for dialysis patients. By adding streaks, daily tips, and simple edit flows, I turned a repetitive task into a motivating habit. The feature launched successfully with the rebranded app, praised as "fun, useful, super," and highlights my strength in leading remote-first, patient-centered design.
                         </Text>
                       </Box>
                 </Box>
@@ -542,11 +652,12 @@ export default function ProjectOverlay({ project, isOpen, onClose }: ProjectOver
                           Background
                         </Text>
                         <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal">
-                          The client provides life-enhancing renal care to <Text as="span" fontWeight="semibold" color="gray.900">38,000 patients across 23 countries</Text>. Their digital ecosystem, the patient app, had mainly been used to view lab results and treatment values. Internally, it was clear the app had potential to become a more active companion in patients' daily health routines.
+                          The client provides renal care to 38,000 patients across 23 countries. Their digital platform, d.CARE, had been mainly used for viewing lab results.
                         </Text>
                         <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal">
-                          One of the most pressing needs was helping patients on dialysis monitor and manage fluid intake. For patients unable to produce urine, accurate tracking is <Text as="span" fontWeight="semibold" color="gray.900">critical but challenging to maintain</Text>.
+                          I observed that fluid intake management was a critical pain point for dialysis patients. For those not producing urine, accurate tracking is essential but often neglected. At the same time, healthcare teams lacked reliable data to support patient care. This gap made fluid tracking a high-impact opportunity for both patients and clinicians.
                         </Text>
+                        
                       </VStack>
                 </Box>
 
@@ -563,18 +674,19 @@ export default function ProjectOverlay({ project, isOpen, onClose }: ProjectOver
                           My role
                         </Text>
                         <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal" mb={3}>
-                          I was the <Text as="span" fontWeight="semibold" color="gray.900">lead designer</Text> on this project, responsible for:
+                          I was the lead designer, responsible for:
                         </Text>
                         <Box pl={4}>
                           <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal">
-                            • <Text as="span" fontWeight="semibold">User research and analysis</Text>
-                            <br />• <Text as="span" fontWeight="semibold">Ideation and concept development</Text>
-                            <br />• <Text as="span" fontWeight="semibold">UX/UI design and prototyping</Text>
-                            <br />• <Text as="span" fontWeight="semibold">Contributing to how branding and illustration were best integrated into the product</Text>
-                            <br />• <Text as="span" fontWeight="semibold">Collaborating closely with engineers to ensure designs were feasible and practical</Text>
-                            <br />• <Text as="span" fontWeight="semibold">Documenting and scaling designs into a Figma-based design system for consistency and reuse</Text>
+                            • Research and analysis of patient and stakeholder needs
+                            <br />• Ideation, user flows, and prototyping in Figma
+                            <br />• UX and UI design for onboarding, logging, and gamification features
+                            <br />• Contributing to branding and illustration integration
+                            <br />• Collaborating with engineers to assess feasibility
+                            <br />• Documenting designs in Figma for consistency across the product
                           </Text>
                         </Box>
+                        
                       </VStack>
                 </Box>
 
@@ -617,16 +729,17 @@ export default function ProjectOverlay({ project, isOpen, onClose }: ProjectOver
                           Challenge
                         </Text>
                         <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal" mb={3}>
-                          Changing patient behavior around fluid intake is <Text as="span" fontWeight="semibold" color="gray.900">difficult</Text>. Hemodialysis patients often struggle to stay within recommended limits. Our challenge was to design a solution that:
+                          Changing patient behavior is difficult, and fluid intake is one of the hardest aspects for dialysis patients to manage. The challenge was to create an experience that:
                         </Text>
                         <Box pl={4}>
                           <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal">
-                            • <Text as="span" fontWeight="semibold">Encouraged patients to log their daily intake</Text>
-                            <br />• <Text as="span" fontWeight="semibold">Made the experience motivating and easy</Text>
-                            <br />• <Text as="span" fontWeight="semibold">Provided actionable guidance without overwhelming users</Text>
-                            <br />• <Text as="span" fontWeight="semibold">Ensured accessibility and inclusivity for elderly patients</Text>
+                            • Encouraged daily input without feeling like a burden
+                            <br />• Motivated patients to stay within safe intake levels
+                            <br />• Provided clinicians with accurate data for treatment discussions
+                            <br />• Worked well for elderly patients with varying digital literacy
                           </Text>
                         </Box>
+                        
                       </VStack>
                 </Box>
 
@@ -644,30 +757,41 @@ export default function ProjectOverlay({ project, isOpen, onClose }: ProjectOver
                           Process and solution
                         </Text>
                         <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal" mb={3}>
-                          <Text as="span" fontWeight="semibold">Research and insights</Text>
+                          <Text as="span" fontWeight="semibold">Research & alignment</Text>
+                        </Text>
+                        <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal">
+                          I reviewed insights from previous internal research and conducted workshops with stakeholders to clarify goals. I noticed that earlier concepts had focused mainly on data accuracy, but less on patient motivation. This observation shaped my design direction: make the experience as motivating as it is precise.
+                        </Text>
+                        <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal" mb={3} mt={4}>
+                          <Text as="span" fontWeight="semibold">Concept & prototyping</Text>
+                        </Text>
+                        <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal">
+                          I mapped user stories with stakeholders and translated them into initial flows. Given the sensitivity of dialysis care, I decided to prototype early and often in Figma so we could validate flows remotely.
+                        </Text>
+                        <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal" mt={3}>
+                          Key design elements included:
                         </Text>
                         <Box pl={4} mb={4}>
                           <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal">
-                            • <Text as="span" fontWeight="semibold">Stakeholder workshops</Text> to align on goals
-                            <br />• <Text as="span" fontWeight="semibold">Leveraged prior internal research</Text> and interviews with healthcare staff
-                            <br />• <Text as="span" fontWeight="semibold">Translated findings into user stories</Text> to anchor design in patient needs
+                            • Onboarding to explain why logging matters
+                            <br />• Fluid logging with simple add/edit flows
+                            <br />• Gamification with streak cards to reward consistency
+                            <br />• Customization so patients could adapt the tool to their habits
+                            <br />• Guidance via "Thirst tips" for practical daily advice
                           </Text>
                         </Box>
                         <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal" mb={3}>
-                          <Text as="span" fontWeight="semibold">Design approach</Text>
+                          <Text as="span" fontWeight="semibold">Design & systems</Text>
                         </Text>
-                        <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal" mb={3}>
-                          We designed iteratively, keeping patient experience at the center:
+                        <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal">
+                          I created a design system in Figma for consistency across screens and alignment with the client's recent rebrand. I noticed that accessibility would be critical (elderly patients, small devices), so I made decisions on contrast, typography, and interaction size accordingly.
                         </Text>
-                        <Box pl={4}>
-                          <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal">
-                            • <Text as="span" fontWeight="semibold">Onboarding</Text> – to introduce the tracker clearly and build trust
-                            <br />• <Text as="span" fontWeight="semibold">Fluid logging</Text> – streamlined interactions to add, edit, and review intakes
-                            <br />• <Text as="span" fontWeight="semibold">Gamification</Text> – streaks and achievement cards to drive consistency
-                            <br />• <Text as="span" fontWeight="semibold">Customization</Text> – allowing patients to tailor the feature to their routines
-                            <br />• <Text as="span" fontWeight="semibold">Guidance</Text> – daily "thirst tips" offering practical, bite-sized advice
-                          </Text>
-                        </Box>
+                        <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal" mb={3} mt={4}>
+                          <Text as="span" fontWeight="semibold">Delivery & validation</Text>
+                        </Text>
+                        <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal">
+                          I worked closely with engineers to ensure all states and interactions were documented, reducing ambiguity in handoff. Pandemic restrictions limited formal usability testing, so I adapted by coordinating nurse-facilitated feedback sessions with patients. This decision gave us practical validation while respecting safety constraints.
+                        </Text>
                       </VStack>
 
                       {/* Lottie Animations */}
@@ -1120,32 +1244,15 @@ export default function ProjectOverlay({ project, isOpen, onClose }: ProjectOver
                         </Text>
                         <Box pl={4} mb={4}>
                           <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal">
-                            • <Text as="span" fontWeight="semibold">Successfully launched</Text> as part of the newly rebranded patient app
-                            <br />• <Text as="span" fontWeight="semibold">Maintained consistency</Text> across design system despite distributed collaboration
-                            <br />• <Text as="span" fontWeight="semibold">Designed with accessibility in mind</Text>, compensating for limited in-person testing
-                            <br />• <Text as="span" fontWeight="semibold">Conducted remote feedback sessions</Text> via nurses, with patients reporting the feature as <Text as="span" fontWeight="semibold" color="gray.900">"fun", "useful", "super"</Text>
+                            • <Text as="span" fontWeight="semibold">Observation:</Text> Patients often skipped daily logging because it felt repetitive.
+                            <br />• <Text as="span" fontWeight="semibold">Decision:</Text> I introduced streak tracking, daily guidance, and quick edit flows to make logging lighter and more rewarding.
+                            <br />• <Text as="span" fontWeight="semibold">Impact:</Text> The feature launched as part of the rebranded d.CARE app, was adopted by patients, and described as "fun," "useful," and "super." The design patterns developed here are now influencing other patient-facing features.
                           </Text>
                         </Box>
-                        <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal">
-                          The tracker improved patient engagement and care team visibility, meeting both user needs and business goals.
-                        </Text>
                       </VStack>
                 </Box>
 
-                    {/* Conclusion Section */}
-                <Box
-                      ref={conclusionRef}
-                  data-section="conclusion"
-                  opacity={conclusionInView ? 1 : 0}
-                  transform={conclusionInView ? 'translateY(0)' : 'translateY(20px)'}
-                  transition="opacity 0.6s ease-out, transform 0.6s ease-out"
-                    >
-                      <VStack align="start" spacing={6} pt={8}>
-                        <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal">
-                          👉 This case shows my ability to lead design in remote-first conditions, using tools, systems, and communication to deliver a patient-centered solution that balances clinical needs with engaging UX.
-                        </Text>
-                      </VStack>
-                      </Box>
+
               </>
             ) : project.title === 'Smarter customer portal' ? (
               <>
@@ -1169,7 +1276,7 @@ export default function ProjectOverlay({ project, isOpen, onClose }: ProjectOver
                       TL;DR
                     </Text>
                     <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.7" fontWeight="normal">
-                          I designed a proof of concept for Alfa Laval's customer portal to give customers an easy overview of their products, documentation, and service options. Using a <Text as="span" fontWeight="semibold" color="gray.900">shortened design sprint, user personas, and rapid prototyping</Text>, I created flows that addressed pain points like scattered product information, unclear service booking, and limited support availability. The concept was <Text as="span" fontWeight="semibold" color="gray.900">well received internally</Text> and is now in the pipeline for production.
+                          I created a proof of concept for Alfa Laval's customer portal, My Pages, to centralize product documentation, service, and support. I noticed customers struggled with scattered information and unclear service flows, so I introduced a concept built on prioritized hypotheses, user personas, and prototyped flows. The PoC was well received, adopted internally, and later moved into Alfa Laval's production pipeline.
                     </Text>
                   </Box>
                 </Box>
@@ -1187,13 +1294,10 @@ export default function ProjectOverlay({ project, isOpen, onClose }: ProjectOver
                       Background
                     </Text>
                     <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal">
-                      Alfa Laval is a global leader in heat transfer, separation, and fluid handling. Their products are often evaluated not only on technical quality but also on how <Text as="span" fontWeight="semibold" color="gray.900">accessible and supportive they are as a supplier</Text>.
+                      Alfa Laval is a global leader in heat transfer, separation, and fluid handling. Their products are highly technical and regulated, meaning customers rely heavily on documentation and after-sales support.
                     </Text>
                     <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal">
-                      Customers frequently needed quick access to product information, documentation, and after-sales service. Without a structured digital platform, this often meant frustration for both customers and support staff.
-                    </Text>
-                    <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal">
-                                                The proposed customer portal aimed to centralize this experience by giving customers an overview of their products, documentation, and service options in one place.
+                      I observed that customers often struggled to find relevant information, order spare parts, or book service. Support was fragmented and slow, leading to frustration and inefficiency. Alfa Laval wanted a portal to solve this: giving customers an overview of their products, documentation, and related services in one place.
                     </Text>
                   </VStack>
                 </Box>
@@ -1211,15 +1315,15 @@ export default function ProjectOverlay({ project, isOpen, onClose }: ProjectOver
                       My role
                     </Text>
                     <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal" mb={3}>
-                      I was the <Text as="span" fontWeight="semibold" color="gray.900">only designer</Text> on this proof of concept. My responsibilities included:
+                      As the sole designer, I was responsible for:
                     </Text>
                     <Box pl={4}>
                       <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal">
-                        • <Text as="span" fontWeight="semibold">Planning and running a shortened design sprint</Text>
-                        <br />• <Text as="span" fontWeight="semibold">Research and stakeholder collaboration</Text>
-                        <br />• <Text as="span" fontWeight="semibold">Defining user personas and needs</Text>
-                        <br />• <Text as="span" fontWeight="semibold">Concept development and UX/UI design</Text>
-                        <br />• <Text as="span" fontWeight="semibold">Prototyping and creating product flows</Text> for key use cases
+                        • Planning and facilitating a shortened design sprint
+                        <br />• Collaborating with stakeholders to define needs and scope
+                        <br />• Creating user personas and mapping pain points
+                        <br />• Developing hypotheses to guide an MVP vision
+                        <br />• UX/UI design and prototyping of key portal flows
                       </Text>
                     </Box>
                   </VStack>
@@ -1238,20 +1342,17 @@ export default function ProjectOverlay({ project, isOpen, onClose }: ProjectOver
                       Challenge
                     </Text>
                     <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal" mb={3}>
-                      Alfa Laval wanted to strengthen its customer relationships beyond just delivering products.
-                    </Text>
-                    <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal" mb={3}>
-                      Key challenges included:
+                      There was no unified customer portal. Customers faced:
                     </Text>
                     <Box pl={4}>
                       <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal">
-                        • <Text as="span" fontWeight="semibold">Scattered information</Text> – product documentation was difficult to access, making compliance and traceability harder than it needed to be
-                        <br />• <Text as="span" fontWeight="semibold">Service management</Text> – processes like ordering spare parts or booking installation were unclear and time-consuming
-                        <br />• <Text as="span" fontWeight="semibold">Support availability</Text> – customer support relied heavily on phone queues and fragmented processes, leading to inefficiency
+                        • Scattered product information
+                        <br />• Unclear booking flows for service or spare parts
+                        <br />• Limited support availability, often via phone queues
                       </Text>
                     </Box>
                     <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal" mt={4}>
-                      The goal was to explore how a customer portal could make these experiences easier, more consistent, and more valuable for customers.
+                      The challenge was to explore how digitization could improve these areas and strengthen Alfa Laval's relationship with customers.
                     </Text>
                   </VStack>
                 </Box>
@@ -1270,41 +1371,33 @@ export default function ProjectOverlay({ project, isOpen, onClose }: ProjectOver
                       Process and solution
                     </Text>
                     <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal" mb={3}>
-                      <Text as="span" fontWeight="semibold">Kickoff and research</Text>
+                      <Text as="span" fontWeight="semibold">Research & alignment</Text>
+                    </Text>
+                    <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal">
+                      I met with stakeholders to clarify scope and helped facilitate a 3-day design sprint (shortened from the usual 5) to gather insights quickly. During the sprint, I contributed to exercises that shaped the direction and then created user personas to ground our decisions in realistic customer needs.
+                    </Text>
+                    <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal" mb={3} mt={4}>
+                      <Text as="span" fontWeight="semibold">Concept & prototyping</Text>
+                    </Text>
+                    <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal">
+                      From the sprint, I identified three main hypotheses:
                     </Text>
                     <Box pl={4} mb={4}>
                       <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal">
-                        • <Text as="span" fontWeight="semibold">Initial meetings with stakeholders</Text> to understand needs and align on scope
-                        <br />• <Text as="span" fontWeight="semibold">Ran a 3-day design sprint</Text> (shortened from the standard 5 days) with business stakeholders to generate ideas and insights
-                        <br />• <Text as="span" fontWeight="semibold">Defined user personas</Text> to represent different types of customers and their needs
+                        • Centralized documentation would make compliance and traceability simpler.
+                        <br />• Simplified service booking would reduce friction and errors.
+                        <br />• Integrated support would provide faster, more relevant help.
                       </Text>
                     </Box>
-                    <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal" mb={3}>
-                      <Text as="span" fontWeight="semibold">Hypotheses and priorities</Text>
+                    <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal">
+                      I decided to prototype these hypotheses into flows directly, focusing on a product overview, registration, and accessory ordering. This made abstract needs tangible and gave stakeholders a clear vision of an MVP.
                     </Text>
-                    <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal" mb={3}>
-                      We developed hypotheses for what the portal should solve:
+                    <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal" mb={3} mt={4}>
+                      <Text as="span" fontWeight="semibold">Design & systems</Text>
                     </Text>
-                    <Box pl={4} mb={4}>
-                      <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal">
-                        • <Text as="span" fontWeight="semibold">Centralized documentation</Text> – customers get all compliance and traceability documents in one place
-                        <br />• <Text as="span" fontWeight="semibold">Simplified service booking</Text> – flows for ordering spare parts and scheduling service are streamlined and intuitive
-                        <br />• <Text as="span" fontWeight="semibold">Integrated support</Text> – digitized support tied to the customer's registered products for faster, more accurate help
-                      </Text>
-                    </Box>
-                    <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal" mb={3}>
-                      These hypotheses were prioritized and mapped toward an MVP scope.
+                    <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal">
+                      I created conceptual flows in Figma that balanced functional clarity with a scalable structure. Each design mapped back to a user need and a prioritized hypothesis.
                     </Text>
-                    <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal" mb={3}>
-                      <Text as="span" fontWeight="semibold">Design and prototyping</Text>
-                    </Text>
-                    <Box pl={4}>
-                      <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal">
-                        • <Text as="span" fontWeight="semibold">Created conceptual flows in Figma</Text>, showing both product overviews and accessory ordering flows
-                        <br />• <Text as="span" fontWeight="semibold">Designed interactions</Text> that made it easy to register products and immediately access related documents and parts
-                        <br />• <Text as="span" fontWeight="semibold">Balanced a functional, straightforward UI</Text> with flexibility for future scale-up
-                      </Text>
-                    </Box>
                   </VStack>
                 </Box>
 
@@ -1315,6 +1408,7 @@ export default function ProjectOverlay({ project, isOpen, onClose }: ProjectOver
                     <video 
                       controls 
                       preload="metadata" 
+                      poster={getPublicUrl('IMAGES', 'images/webshop_thumbnail.png', 'w=800,h=450,fit=cover,format=webp')}
                       style={{
                         width: '100%',
                         height: 'auto',
@@ -1331,6 +1425,7 @@ export default function ProjectOverlay({ project, isOpen, onClose }: ProjectOver
                     <video 
                       controls 
                       preload="metadata" 
+                      poster={getPublicUrl('IMAGES', 'images/register_product_thumbnail.png', 'w=800,h=450,fit=cover,format=mp4')}
                       style={{
                         width: '100%',
                         height: 'auto',
@@ -1357,14 +1452,11 @@ export default function ProjectOverlay({ project, isOpen, onClose }: ProjectOver
                     </Text>
                     <Box pl={4} mb={4}>
                       <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal">
-                        • <Text as="span" fontWeight="semibold">Delivered a full proof of concept</Text> that was well received by stakeholders and initial clients
-                        <br />• <Text as="span" fontWeight="semibold">Designs were considered more ambitious</Text> than expected, in a positive way, but also highlighted the scale of effort required
-                        <br />• <Text as="span" fontWeight="semibold">Although the pandemic slowed implementation</Text>, the designs were gradually shared internally and are now in the production pipeline
+                        • <Text as="span" fontWeight="semibold">Observation:</Text> Customers struggled with scattered information and unclear service booking, while Alfa Laval lacked a unified portal.
+                        <br />• <Text as="span" fontWeight="semibold">Decision:</Text> I supported the facilitation of a 3-day sprint and took ownership of turning the outcomes into personas and prototyped flows.
+                        <br />• <Text as="span" fontWeight="semibold">Impact:</Text> The PoC was well received, adopted internally, and gradually moved into the production pipeline. It set the foundation for a scalable customer portal and was more ambitious than originally expected.
                       </Text>
                     </Box>
-                    <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal">
-                          The long-term goal of the customer portal is to strengthen Alfa Laval's customer relationships by making product ownership and service effortless. Success will be measured both quantitatively (active and returning users) and qualitatively (customer satisfaction and usability feedback).
-                    </Text>
                   </VStack>
                 </Box>
 
@@ -1375,9 +1467,7 @@ export default function ProjectOverlay({ project, isOpen, onClose }: ProjectOver
                   animation={isClosing ? "contentSlideOut 0.3s ease-in forwards" : "contentSlideIn 0.6s ease-out 0.6s forwards"}
                 >
                   <VStack align="start" spacing={6} pt={8}>
-                    <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal">
-                      👉 This case shows my ability to work independently as the sole designer, structure a design sprint, and translate complex customer needs into a clear digital concept.
-                    </Text>
+
                   </VStack>
                 </Box>
               </>
@@ -1403,7 +1493,7 @@ export default function ProjectOverlay({ project, isOpen, onClose }: ProjectOver
                       TL;DR
                     </Text>
                     <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.7" fontWeight="normal">
-                      I designed the digital experience for Clas Ohlson's rental service, enabling customers to rent tools online instead of buying them. Working with product managers and engineers, I delivered <Text as="span" fontWeight="semibold" color="gray.900">high-fidelity prototypes and flows</Text> for both customers and store staff in just a few weeks. Despite tight timelines and a rebranding process, the service launched successfully across Sweden, Norway, and Finland in September 2020, using <Text as="span" fontWeight="semibold" color="gray.900">nearly all of our design work</Text>.
+                      I designed Clas Ohlson's digital rental experience from the ground up. With no existing online flow, only scattered in-store pilots, I noticed requirements were broad and unclear. To reduce risk, I decided to move directly into hi-fi prototypes in Figma, giving stakeholders something concrete to react to. The service launched in Sweden, Norway, and Finland using nearly all of my delivered designs, showing the impact of fast, collaborative design under pressure.
                     </Text>
                   </Box>
                 </Box>
@@ -1432,10 +1522,10 @@ export default function ProjectOverlay({ project, isOpen, onClose }: ProjectOver
                       Background
                     </Text>
                     <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal">
-                      Clas Ohlson is one of the largest home improvement chains in Scandinavia with <Text as="span" fontWeight="semibold" color="gray.900">over 230 stores</Text>. In 2016, they began experimenting with tool rentals in a few locations. By 2020, with more people looking to rent instead of own and the environmental benefits that come with it, the company decided to expand the concept digitally.
+                      Clas Ohlson is one of Scandinavia's largest home improvement chains with more than 230 stores. Since 2016, they had offered tool rentals in a few pilot stores, but the service was in-store only and difficult to scale.
                     </Text>
                     <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal">
-                                                The new initiative aimed to make tool rentals available online, accessible in all stores, and integrated into their commerce platform.
+                      With growing demand for renting instead of owning — and sustainability as a strategic driver — Clas Ohlson wanted to expand tool rentals into a full digital service. The initiative, Rent at Clas, aimed to let customers book tools online and enable staff to manage bookings efficiently, while supporting business goals like add-on sales (e.g. detergent with a carpet cleaner), satisfaction, and rental volume.
                     </Text>
                   </VStack>
                 </Box>
@@ -1453,17 +1543,16 @@ export default function ProjectOverlay({ project, isOpen, onClose }: ProjectOver
                       My role
                     </Text>
                     <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal" mb={3}>
-                      I was the <Text as="span" fontWeight="semibold" color="gray.900">main designer</Text> on this project, responsible for:
+                      I was the main designer, responsible for:
                     </Text>
                     <Box pl={4}>
                       <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal">
-                        • <Text as="span" fontWeight="semibold">User research and analysis</Text> of existing services
-                        <br />• <Text as="span" fontWeight="semibold">Concept ideation and defining user flows</Text>
-                        <br />• <Text as="span" fontWeight="semibold">Visual design and prototyping</Text> in Figma
-                        <br />• <Text as="span" fontWeight="semibold">Running user testing and validating flows</Text>
-                        <br />• <Text as="span" fontWeight="semibold">Aligning stakeholders</Text> on goals and priorities
-                        <br />• <Text as="span" fontWeight="semibold">Preparing developer handoff</Text> with annotations and interaction notes
-                        <br />• <Text as="span" fontWeight="semibold">Ensuring consistency</Text> while balancing old and upcoming design systems during rebrand
+                        • Reviewing existing pilots and requirements with product managers
+                        <br />• Defining booking and management flows from scratch
+                        <br />• Designing and prototyping hi-fi screens in Figma
+                        <br />• Iterating quickly with stakeholders under tight timelines
+                        <br />• Preparing detailed developer handoff with states and interaction notes
+                        <br />• Balancing consistency through a hybrid design system during an ongoing rebrand
                       </Text>
                     </Box>
                   </VStack>
@@ -1482,14 +1571,14 @@ export default function ProjectOverlay({ project, isOpen, onClose }: ProjectOver
                       Challenge
                     </Text>
                     <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal" mb={3}>
-                      The client wanted to expand an in-store only rental service into a <Text as="span" fontWeight="semibold" color="gray.900">seamless online experience</Text>. This meant:
+                      There was no existing digital rental journey to build on — only fragmented store processes and a list of loosely defined requirements. Key challenges were:
                     </Text>
                     <Box pl={4}>
                       <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal">
-                        • <Text as="span" fontWeight="semibold">Designing a clear booking flow</Text> for customers
-                        <br />• <Text as="span" fontWeight="semibold">Creating a platform for store staff</Text> to manage rentals and bookings
-                        <br />• <Text as="span" fontWeight="semibold">Working under significant time pressure</Text> while the company was mid-rebrand
-                        <br />• <Text as="span" fontWeight="semibold">Meeting business goals</Text> around sustainability, add-on sales (e.g. detergent for carpet cleaner rentals), and customer satisfaction
+                        • Defining a customer booking flow and staff management tool from scratch
+                        <br />• Working with limited time and high expectations for launch
+                        <br />• Designing during an ongoing rebrand, where the style guide was not yet finalized
+                        <br />• Supporting business KPIs such as rental volume, add-on sales, and satisfaction
                       </Text>
                     </Box>
                   </VStack>
@@ -1509,48 +1598,29 @@ export default function ProjectOverlay({ project, isOpen, onClose }: ProjectOver
                       Process and solution
                     </Text>
                     <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal" mb={3}>
-                      <Text as="span" fontWeight="semibold">Research and kickoff</Text>
+                      <Text as="span" fontWeight="semibold">Research & alignment</Text>
                     </Text>
-                    <Box pl={4} mb={4}>
-                      <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal">
-                        • <Text as="span" fontWeight="semibold">Reviewed existing research</Text> and materials from earlier pilots
-                        <br />• <Text as="span" fontWeight="semibold">Looked at Clas Ohlson's related services</Text> (like Clas Fixare) to ensure consistency
-                        <br />• <Text as="span" fontWeight="semibold">Met with stakeholders</Text> to clarify priorities and turn them into user stories
-                      </Text>
-                    </Box>
-                    <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal" mb={3}>
-                      <Text as="span" fontWeight="semibold">User stories and requirements</Text>
+                    <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal">
+                      I started by reviewing pilots and related services like Clas Fixare to identify patterns. My observation was that requirements were scattered, which risked slowing progress. To create focus, I worked with stakeholders to map user stories and prioritize them against KPIs.
                     </Text>
-                    <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal" mb={3}>
-                      We defined what customers needed from the rental experience and what staff required to run it smoothly:
+                    <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal" mb={3} mt={4}>
+                      <Text as="span" fontWeight="semibold">Concept & prototyping</Text>
                     </Text>
-                    <Box pl={4} mb={4}>
-                      <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal">
-                        • <Text as="span" fontWeight="semibold">Translated these into requirements</Text> and prioritized them (high, medium, low)
-                        <br />• <Text as="span" fontWeight="semibold">Aligned design work with KPIs</Text> such as rental volume, add-on sales, and satisfaction
-                      </Text>
-                    </Box>
-                    <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal" mb={3}>
-                      <Text as="span" fontWeight="semibold">Design and prototyping</Text>
+                    <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal">
+                      Given the deadline, I decided to skip low-fidelity exploration and design directly in hi-fi. This gave stakeholders something tangible within days, enabling fast feedback and alignment. I shared interactive Figma prototypes that covered full booking and staff flows, which helped reveal gaps and refine priorities early.
                     </Text>
-                    <Box pl={4} mb={4}>
-                      <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal">
-                        • <Text as="span" fontWeight="semibold">Used Figma to create high-fidelity prototypes</Text> for both web and desktop flows
-                        <br />• <Text as="span" fontWeight="semibold">Built screens step by step</Text> against user stories to stay focused on actual needs
-                        <br />• <Text as="span" fontWeight="semibold">Involved stakeholders early</Text>, sharing prototypes to get feedback and adjust quickly
-                        <br />• <Text as="span" fontWeight="semibold">Balanced design between existing and upcoming systems</Text>, creating a hybrid style that worked for launch
-                      </Text>
-                    </Box>
-                    <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal" mb={3}>
-                      <Text as="span" fontWeight="semibold">Developer handoff</Text>
+                    <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal" mb={3} mt={4}>
+                      <Text as="span" fontWeight="semibold">Design & systems</Text>
                     </Text>
-                    <Box pl={4}>
-                      <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal">
-                        • <Text as="span" fontWeight="semibold">Structured all flows clearly</Text> in Figma
-                        <br />• <Text as="span" fontWeight="semibold">Added notes, interactions, and alternative states</Text> to reduce uncertainty
-                        <br />• <Text as="span" fontWeight="semibold">Collaborated closely with engineers</Text> to make sure everything was clear and feasible
-                      </Text>
-                    </Box>
+                    <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal">
+                      Because of the rebrand, I built a hybrid system that combined current components with upcoming visual identity. This ensured consistency and allowed the project to move forward without waiting for the new system to finalize.
+                    </Text>
+                    <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal" mb={3} mt={4}>
+                      <Text as="span" fontWeight="semibold">Delivery & validation</Text>
+                    </Text>
+                    <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal">
+                      I prepared a developer-ready Figma handoff with flows, states, and interaction notes to reduce uncertainty. Validation was limited by the pandemic, so I adapted by combining stakeholder reviews with lightweight remote testing, ensuring the designs were robust enough to launch.
+                    </Text>
                   </VStack>
                 </Box>
 
@@ -1561,6 +1631,7 @@ export default function ProjectOverlay({ project, isOpen, onClose }: ProjectOver
                     <video 
                       controls 
                       preload="metadata" 
+                      poster={getPublicUrl('IMAGES', 'images/clasrental_thumbnail.png', 'w=800,h=450,fit=cover,format=webp')}
                       style={{
                         width: '100%',
                         height: 'auto',
@@ -1598,10 +1669,9 @@ export default function ProjectOverlay({ project, isOpen, onClose }: ProjectOver
                     </Text>
                     <Box pl={4} mb={4}>
                       <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal">
-                        • <Text as="span" fontWeight="semibold">The tool rental service launched</Text> in September 2020 across Sweden, Norway, and Finland
-                        <br />• <Text as="span" fontWeight="semibold">The final product closely followed</Text> the designs we delivered, both for customer booking and staff management
-                        <br />• <Text as="span" fontWeight="semibold">Customers could now rent tools online</Text> without issues, while staff had a smooth system to manage rentals
-                        <br />• <Text as="span" fontWeight="semibold">Although limited time meant less user testing</Text> than I'd have liked, the project showed how fast, collaborative design can enable a major service rollout within months
+                        • <Text as="span" fontWeight="semibold">Observation:</Text> There was no existing digital rental journey, and requirements were scattered. Staff also struggled with fragmented processes in the pilots.
+                        <br />• <Text as="span" fontWeight="semibold">Decision:</Text> I moved directly to hi-fi prototypes in Figma, designed streamlined flows for both customers and staff, and created a hybrid design system to keep momentum during the rebrand.
+                        <br />• <Text as="span" fontWeight="semibold">Impact:</Text> The service launched in September 2020 across Sweden, Norway, and Finland using nearly all of my delivered designs. Customers could book tools online, staff could manage rentals smoothly, and the solution helped Clas Ohlson expand rentals at scale under tight deadlines.
                       </Text>
                     </Box>
                   </VStack>
@@ -1614,9 +1684,7 @@ export default function ProjectOverlay({ project, isOpen, onClose }: ProjectOver
                   animation={isClosing ? "contentSlideOut 0.3s ease-in forwards" : "contentSlideIn 0.6s ease-out 0.6s forwards"}
                 >
                   <VStack align="start" spacing={6} pt={8}>
-                    <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal">
-                      👉 This project highlights my ability to move quickly under pressure, deliver production-ready designs, and balance user needs with business goals, even in the middle of a rebrand and remote collaboration.
-                    </Text>
+
                   </VStack>
                 </Box>
               </>
@@ -1642,7 +1710,7 @@ export default function ProjectOverlay({ project, isOpen, onClose }: ProjectOver
                       TL;DR
                     </Text>
                     <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.7" fontWeight="normal">
-                          I designed a new portfolio reporting feature for the customer portal, making complex energy trading data easier to understand and act on. As the sole designer, I worked closely with business stakeholders, PM, engineers, and end users to translate high-level energy requirements into clear, usable reports. The concept was <Text as="span" fontWeight="semibold" color="gray.900">well received by both the client and their customers</Text>, who praised the simplicity of the final solution.
+                          I designed a new reporting feature for Modity's customer portal to make complex energy trading data clearer and more actionable. I noticed that customers struggled to reconcile invoices with the limited data available, so I created modular portfolio reports with monthly and yearly breakdowns. The feature was implemented in the live portal and praised by both Modity and their customers for turning a highly complex domain into something simple and useful.
                     </Text>
                   </Box>
                 </Box>
@@ -1660,13 +1728,10 @@ export default function ProjectOverlay({ project, isOpen, onClose }: ProjectOver
                       Background
                     </Text>
                     <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal">
-                      Modity is one of Sweden's leading energy traders and balance service providers for electricity and gas. Their main focus is helping energy companies and large consumers <Text as="span" fontWeight="semibold" color="gray.900">manage and optimize their energy needs</Text>.
+                      Modity is one of Sweden's leading energy traders, helping companies manage their electricity and gas needs.
                     </Text>
                     <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal">
-                      They already had a customer portal, but it lacked a key feature: the ability for customers to get a comprehensive overview of electricity purchase costs and outcomes in a portfolio report.
-                    </Text>
-                    <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal">
-                      Customers needed this not only for transparency, but also to run their own monthly and yearly analyses, compare results against invoices, and create structured follow-ups.
+                      They had a customer portal, but it lacked a comprehensive reporting feature. Customers wanted to see their total electricity purchase outcomes, break them down into detailed reports, and compare those reports directly against invoices. Without this, analysis and reconciliation required time-consuming manual work.
                     </Text>
                   </VStack>
                 </Box>
@@ -1684,16 +1749,16 @@ export default function ProjectOverlay({ project, isOpen, onClose }: ProjectOver
                       My role
                     </Text>
                     <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal" mb={3}>
-                      I was the <Text as="span" fontWeight="semibold" color="gray.900">sole designer</Text> on this project, responsible for:
+                      I was the sole designer on the project, responsible for:
                     </Text>
                     <Box pl={4}>
                       <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal">
-                        • <Text as="span" fontWeight="semibold">Research and domain understanding</Text>
-                        <br />• <Text as="span" fontWeight="semibold">Running workshops with PM, engineers, and stakeholders</Text>
-                        <br />• <Text as="span" fontWeight="semibold">Translating insights into user stories</Text>
-                        <br />• <Text as="span" fontWeight="semibold">UX/UI design and prototyping</Text>
-                        <br />• <Text as="span" fontWeight="semibold">User testing and iteration</Text>
-                        <br />• <Text as="span" fontWeight="semibold">Delivering clear specifications to engineering</Text>
+                        • Collaborating with business stakeholders, PM, and engineers
+                        <br />• Researching the energy trading domain to understand complexity
+                        <br />• Facilitating workshops to define requirements
+                        <br />• Interviewing customers and translating findings into user stories
+                        <br />• UX/UI design, wireframing, and prototyping in Figma
+                        <br />• Running user feedback sessions and iterating on designs
                       </Text>
                     </Box>
                   </VStack>
@@ -1712,7 +1777,7 @@ export default function ProjectOverlay({ project, isOpen, onClose }: ProjectOver
                       Challenge
                     </Text>
                     <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal">
-                      The biggest challenge was the <Text as="span" fontWeight="semibold" color="gray.900">complexity of the energy trading domain</Text>. I had to get up to speed quickly on terminology, workflows, and customer needs in order to design something intuitive for users who needed detailed yet clear reporting.
+                      The main challenge was the complexity of the energy trading domain, which was completely new to me. To create value, I had to understand enough of the domain to design reports that customers could actually use without being overwhelmed.
                     </Text>
                   </VStack>
                 </Box>
@@ -1731,42 +1796,23 @@ export default function ProjectOverlay({ project, isOpen, onClose }: ProjectOver
                       Process and solution
                     </Text>
                     <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal" mb={3}>
-                      <Text as="span" fontWeight="semibold">Research and workshops</Text>
+                      <Text as="span" fontWeight="semibold">Research & alignment</Text>
                     </Text>
-                    <Box pl={4} mb={4}>
-                      <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal">
-                        • <Text as="span" fontWeight="semibold">Started with introductory meetings</Text> to understand the scope and terminology
-                        <br />• <Text as="span" fontWeight="semibold">Ran collaborative workshops</Text> with engineers, PM, and stakeholders to align on requirements and success criteria
-                      </Text>
-                    </Box>
-                    <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal" mb={3}>
-                      <Text as="span" fontWeight="semibold">User stories and insights</Text>
+                    <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal">
+                      I started with stakeholder workshops to clarify requirements and success criteria. I observed that different teams had very different priorities, which risked creating a bloated solution. To avoid this, I focused the design direction around concrete customer tasks like reconciling invoices and tracking purchase outcomes.
                     </Text>
-                    <Box pl={4} mb={4}>
-                      <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal">
-                        • <Text as="span" fontWeight="semibold">Conducted interviews with actual portal users</Text> to uncover how they currently tracked costs and outcomes
-                        <br />• <Text as="span" fontWeight="semibold">Translated insights into user stories</Text> that guided the design priorities
-                      </Text>
-                    </Box>
-                    <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal" mb={3}>
-                      <Text as="span" fontWeight="semibold">Wireframes and testing</Text>
+                    <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal" mb={3} mt={4}>
+                      <Text as="span" fontWeight="semibold">Concept & prototyping</Text>
                     </Text>
-                    <Box pl={4} mb={4}>
-                      <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal">
-                        • <Text as="span" fontWeight="semibold">Created low-fidelity wireframes</Text> (instead of starting directly with high-fidelity) to keep the focus on structure and clarity in a very complex domain
-                        <br />• <Text as="span" fontWeight="semibold">Conducted feedback sessions</Text> with users and stakeholders, iterating based on what was unclear or overly detailed
-                      </Text>
-                    </Box>
-                    <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal" mb={3}>
-                      <Text as="span" fontWeight="semibold">Design</Text>
+                    <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal">
+                      I interviewed customers to capture how they currently managed reporting and turned those insights into user stories. Rather than jumping straight into polished screens, I decided to begin with low-fidelity wireframes. This allowed me to simplify the structure of reports before layering on visual detail.
                     </Text>
-                    <Box pl={4}>
-                      <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal">
-                        • <Text as="span" fontWeight="semibold">Finalized the reporting interface</Text> with a clean, modular design
-                        <br />• <Text as="span" fontWeight="semibold">Focused on presenting complex data</Text> in a way that was scannable and actionable
-                        <br />• <Text as="span" fontWeight="semibold">Prototyped user flows in Figma</Text> to demonstrate how customers could move from overview to detailed breakdowns
-                      </Text>
-                    </Box>
+                    <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal" mb={3} mt={4}>
+                      <Text as="span" fontWeight="semibold">Design & iteration</Text>
+                    </Text>
+                    <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal">
+                      I prototyped flows for modular portfolio reports in Figma, showing both overviews and detailed breakdowns. I scheduled feedback sessions with users and stakeholders, iterating on clarity and reducing jargon. The final design presented data in a clear, scannable format that supported both quick checks and deep dives.
+                    </Text>
                   </VStack>
                 </Box>
 
@@ -1776,6 +1822,7 @@ export default function ProjectOverlay({ project, isOpen, onClose }: ProjectOver
                     <video 
                       controls 
                       preload="metadata" 
+                      poster={getPublicUrl('IMAGES', 'images/modity_thumbnail.png', 'w=800,h=450,fit=cover,format=webp')}
                       style={{
                         width: '100%',
                         height: 'auto',
@@ -1802,11 +1849,9 @@ export default function ProjectOverlay({ project, isOpen, onClose }: ProjectOver
                     </Text>
                     <Box pl={4} mb={4}>
                       <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal">
-                        • <Text as="span" fontWeight="semibold">The portfolio reporting feature was implemented</Text> in the customer portal and rolled out to their users
-                        <br />• <Text as="span" fontWeight="semibold">Both the client and their customers responded positively</Text>, highlighting how the design made complex reporting much easier to understand and act on
-                        <br />• <Text as="span" fontWeight="semibold">Customers valued the ability to run their own analyses</Text> and compare results with invoices directly in the portal, reducing time spent on manual work
-                        <br />• <Text as="span" fontWeight="semibold">The client praised the project</Text> for translating a highly complex domain into a simple interface within a short timeframe
-                        <br />• <Text as="span" fontWeight="semibold">For me, the project was rewarding</Text> as it proved my ability to step into a completely new domain and deliver a solution that was adopted and appreciated in real use
+                        • <Text as="span" fontWeight="semibold">Observation:</Text> Customers struggled to reconcile invoices because the portal lacked clear, detailed reporting.
+                        <br />• <Text as="span" fontWeight="semibold">Decision:</Text> I simplified requirements into core tasks, created wireframes to handle domain complexity, and iterated based on direct user feedback.
+                        <br />• <Text as="span" fontWeight="semibold">Impact:</Text> The new portfolio reporting feature was implemented in the live portal. Customers could now run their own analyses, compare reports to invoices, and save time on manual work. Modity praised the solution for translating complex requirements into a simple, useful interface delivered in a short timeframe.
                       </Text>
                     </Box>
                   </VStack>
@@ -1819,9 +1864,7 @@ export default function ProjectOverlay({ project, isOpen, onClose }: ProjectOver
                   animation={isClosing ? "contentSlideOut 0.3s ease-in forwards" : "contentSlideIn 0.6s ease-out 0.6s forwards"}
                 >
                   <VStack align="start" spacing={6} pt={8}>
-                    <Text fontSize={{ base: 'md', lg: 'lg' }} color="gray.700" lineHeight="1.8" fontWeight="normal">
-                      👉 This case highlights my ability to simplify complex, technical information into user-friendly designs, work independently as the sole designer, and drive alignment between business, engineering, and end users.
-                    </Text>
+
                   </VStack>
                 </Box>
               </>

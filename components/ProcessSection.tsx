@@ -45,22 +45,22 @@ export default function ProcessSection() {
     {
       step: '01',
       title: 'Research & alignment',
-      description: 'Every project starts with understanding the problem space. I work closely with stakeholders, review existing research, and talk to users to uncover needs, challenges, and opportunities. When needed, I run workshops or design sprints to align business goals with user goals.'
+      description: 'Every project starts by clarifying the problem space. I work with stakeholders, review existing research, and talk to users to uncover needs and challenges. I also map existing structures and competitor offerings to identify gaps and opportunities. This makes sure priorities are clear and the team is aligned on what success should look like for both the users and the business.'
     },
     {
       step: '02', 
       title: 'Concept & prototyping',
-      description: 'Once we know what to solve, I translate insights into user stories, flows, and initial wireframes. Depending on the complexity, this can range from low-fidelity sketches to high-fidelity interactive prototypes in Figma. Early validation is key, so I test concepts quickly with users and stakeholders to refine direction before scaling.'
+      description: 'Once we know what to solve, I turn insights into user stories, flows, and wireframes. Depending on the complexity, I create anything from quick sketches to high-fidelity prototypes in Figma. I test concepts early with users and stakeholders to refine direction before investing heavily. This helps reduce risk, save time, and build confidence that we are moving in the right direction.'
     },
     {
       step: '03',
       title: 'Design & systems',
-      description: 'I create clear, user-friendly designs that balance usability with business and brand needs. Whenever possible, I document in Figma and connect work to design systems to ensure consistency and scalability. I also adapt to evolving brand identities, hybrid systems, or accessibility requirements when projects demand it.'
+      description: 'I create designs that balance usability with business and brand needs. Work is documented in Figma and connected to design systems for consistency and scalability. I adapt designs to new brand directions, technical constraints, and accessibility requirements so the experience works for everyone. The goal is always a design that feels clear to users, supports the business, and can grow over time.'
     },
     {
       step: '04',
       title: 'Delivery & validation',
-      description: 'I work closely with engineers to ensure a smooth handoff, adding specifications, states, and interaction notes where needed. After delivery, I follow up to see how the solution works in practice. That can mean remote testing, collecting feedback through staff, or pilot rollouts depending on the project.'
+      description: 'I work side by side with engineers during handoff, adding specifications and interaction notes so designs are clear to build. After launch, I check how the solution works in practice through user feedback and lightweight testing. The aim is to capture insights quickly and feed them back into the design so the product continues to create value after release.'
     }
   ]
 
