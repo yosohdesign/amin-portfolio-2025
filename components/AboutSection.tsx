@@ -25,13 +25,13 @@ export default function AboutSection() {
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
-          // Add a small delay to ensure the animation is visible
-          setTimeout(() => setIsVisible(true), 100)
+          // Reduced delay for faster response on mobile
+          setTimeout(() => setIsVisible(true), 50)
         }
       },
       {
-        threshold: 0.2,
-        rootMargin: '0px 0px -50px 0px'
+        threshold: 0.1, // Reduced from 0.2 to 0.1 for earlier trigger
+        rootMargin: '0px 0px -30px 0px' // Reduced from -50px for earlier trigger
       }
     )
 
@@ -63,11 +63,13 @@ export default function AboutSection() {
                 borderRadius="3xl"
                 opacity={isVisible ? 1 : 0}
                 transform={isVisible ? 'translateX(0)' : 'translateX(-40px)'}
-                transition="opacity 0.8s ease-out, transform 0.8s ease-out"
+                transition="opacity 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94), transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94)"
                 transitionDelay="0.1s"
                 sx={{
                   '@media (max-width: 767px)': {
-                    transform: isVisible ? 'translateY(0)' : 'translateY(20px)'
+                    transform: isVisible ? 'translateY(0) scale(1)' : 'translateY(20px) scale(0.98)',
+                    transition: 'opacity 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94), transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+                    transitionDelay: '0.05s'
                   }
                 }}
               />
@@ -86,11 +88,13 @@ export default function AboutSection() {
                 w="full"
                 opacity={isVisible ? 1 : 0}
                 transform={isVisible ? 'translateX(0)' : 'translateX(40px)'}
-                transition="opacity 0.8s ease-out, transform 0.8s ease-out"
+                transition="opacity 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94), transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94)"
                 transitionDelay="0.2s"
                 sx={{
                   '@media (max-width: 767px)': {
-                    transform: isVisible ? 'translateY(0)' : 'translateY(20px)'
+                    transform: isVisible ? 'translateY(0)' : 'translateY(20px)',
+                    transition: 'opacity 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94), transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+                    transitionDelay: '0.1s'
                   }
                 }}
               >
@@ -107,11 +111,13 @@ export default function AboutSection() {
                 w="full"
                 opacity={isVisible ? 1 : 0}
                 transform={isVisible ? 'translateX(0)' : 'translateX(40px)'}
-                transition="opacity 0.8s ease-out, transform 0.8s ease-out"
+                transition="opacity 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94), transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94)"
                 transitionDelay="0.3s"
                 sx={{
                   '@media (max-width: 767px)': {
-                    transform: isVisible ? 'translateY(0)' : 'translateY(20px)'
+                    transform: isVisible ? 'translateY(0)' : 'translateY(20px)',
+                    transition: 'opacity 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94), transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+                    transitionDelay: '0.15s'
                   }
                 }}
               >
@@ -126,11 +132,13 @@ export default function AboutSection() {
                 fontWeight="light"
                 opacity={isVisible ? 1 : 0}
                 transform={isVisible ? 'translateX(0)' : 'translateX(40px)'}
-                transition="opacity 0.8s ease-out, transform 0.8s ease-out"
+                transition="opacity 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94), transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94)"
                 transitionDelay="0.4s"
                 sx={{
                   '@media (max-width: 767px)': {
-                    transform: isVisible ? 'translateY(0)' : 'translateY(20px)'
+                    transform: isVisible ? 'translateY(0)' : 'translateY(20px)',
+                    transition: 'opacity 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94), transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+                    transitionDelay: '0.2s'
                   }
                 }}
               >
@@ -148,11 +156,13 @@ export default function AboutSection() {
                 fontWeight="light"
                 opacity={isVisible ? 1 : 0}
                 transform={isVisible ? 'translateX(0)' : 'translateX(40px)'}
-                transition="opacity 0.8s ease-out, transform 0.8s ease-out"
+                transition="opacity 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94), transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94)"
                 transitionDelay="0.5s"
                 sx={{
                   '@media (max-width: 767px)': {
-                    transform: isVisible ? 'translateY(0)' : 'translateY(20px)'
+                    transform: isVisible ? 'translateY(0)' : 'translateY(20px)',
+                    transition: 'opacity 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94), transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+                    transitionDelay: '0.25s'
                   }
                 }}
               >
@@ -184,11 +194,13 @@ export default function AboutSection() {
                 mt={4}
                 opacity={isVisible ? 1 : 0}
                 transform={isVisible ? 'translateX(0)' : 'translateX(40px)'}
-                transition="opacity 0.8s ease-out, transform 0.8s ease-out"
+                transition="opacity 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94), transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94)"
                 transitionDelay="0.6s"
                 sx={{
                   '@media (max-width: 767px)': {
-                    transform: isVisible ? 'translateY(0)' : 'translateY(20px)'
+                    transform: isVisible ? 'translateY(0)' : 'translateY(20px)',
+                    transition: 'opacity 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94), transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+                    transitionDelay: '0.3s'
                   }
                 }}
               >
