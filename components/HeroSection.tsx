@@ -8,11 +8,16 @@ import {
   Heading,
   Text,
   VStack,
+  Button,
   useColorModeValue,
+  useDisclosure,
+  Icon,
 } from '@chakra-ui/react'
+import { Sparkle } from '@phosphor-icons/react'
 import { useEffect, useState } from 'react'
 import FloatingNavbar from './FloatingNavbar'
 import Gallery from './Gallery'
+import RoleMatcherModal from './RoleMatcherModal'
 import { useScrollEffect } from '@/lib/hooks/useScrollEffect'
 import { getPublicUrl } from '@/lib/storage'
 
@@ -20,6 +25,7 @@ export default function HeroSection() {
   const textColor = useColorModeValue('gray.600', 'gray.300')
   const { getHeroScrollEffect } = useScrollEffect()
   const [isVisible, setIsVisible] = useState(false)
+  const { isOpen: isRoleMatchOpen, onOpen: onRoleMatchOpen, onClose: onRoleMatchClose } = useDisclosure()
 
   // Trigger animations on component mount
   useEffect(() => {
@@ -138,6 +144,32 @@ export default function HeroSection() {
                   Dedicated to creative problem-solving and committed to crafting genuine user experiences. 
                   I focus on simplifying complex processes and user journeys, turning them into innovative and modern solutions.
                 </Text>
+                
+                {/* Role Match Button */}
+                <Button
+                  onClick={onRoleMatchOpen}
+                  bg="white"
+                  color="gray.800"
+                  border="1px solid"
+                  borderColor="gray.400"
+                  borderRadius="lg"
+                  px={8}
+                  py={4}
+                  fontSize="lg"
+                  fontWeight="medium"
+                  _hover={{ 
+                    bg: 'gray.50',
+                    borderColor: 'gray.500',
+                    transform: 'translateY(-1px)'
+                  }}
+                  opacity={isVisible ? 1 : 0}
+                  transform={isVisible ? 'translateY(0)' : 'translateY(30px)'}
+                  transition="opacity 0.8s ease-out, transform 0.8s ease-out"
+                  transitionDelay="0.8s"
+                  leftIcon={<Sparkle color="blue.400" weight="regular" />}
+                >
+                  Role match me
+                </Button>
               </VStack>
             </GridItem>
 
@@ -158,6 +190,9 @@ export default function HeroSection() {
           </Grid>
         </Container>
       </Box>
+      
+      {/* Role Matcher Modal */}
+      <RoleMatcherModal isOpen={isRoleMatchOpen} onClose={onRoleMatchClose} />
     </>
   )
 }

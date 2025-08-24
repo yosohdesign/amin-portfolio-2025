@@ -109,6 +109,7 @@ export default function FloatingNavbar({ isHero = false }: FloatingNavbarProps) 
               >
                 Process
               </Link>
+
               <Link
                 href="#about"
                 color="gray.600"
@@ -213,6 +214,7 @@ export default function FloatingNavbar({ isHero = false }: FloatingNavbarProps) 
             >
               Process
             </Link>
+
             <Link
               href="#about"
               color="gray.600"
