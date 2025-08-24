@@ -5,15 +5,15 @@ import AboutSection from '@/components/AboutSection'
 import CompanyLogosSection from '@/components/CompanyLogosSection'
 import ContactSection from '@/components/ContactSection'
 
-export default function Home() {
-  return (
-    <main>
-      <HeroSection />
-      <ProjectsSection />
-      <ProcessSection />
-      <AboutSection />
-      <CompanyLogosSection />
-      <ContactSection />
-    </main>
-  )
-}
+  export default function Home() {
+    return (
+      <main>
+        <HeroSection />
+        <ProjectsSection />
+        <ProcessSection />
+        <AboutSection />
+        <CompanyLogosSection />
+        <ContactSection />
+      </main>
+    )
+  }
