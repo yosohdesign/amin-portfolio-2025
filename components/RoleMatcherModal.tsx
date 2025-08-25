@@ -915,9 +915,6 @@ export default function RoleMatcherModal({ isOpen, onClose }: RoleMatcherModalPr
             borderRadius="xl" 
             mx={4} 
             maxH="90vh"
-            transition="all 0.3s ease-out"
-            transform={isOpen ? "scale(1)" : "scale(0.95)"}
-            opacity={isOpen ? 1 : 0}
           >
             <ModalHeader borderBottomWidth={showResults ? "1px" : "0px"} borderColor="gray.200">
               {renderHeader()}
@@ -950,17 +947,8 @@ export default function RoleMatcherModal({ isOpen, onClose }: RoleMatcherModalPr
           />
           <DrawerContent 
             borderTopRadius="xl"
-            transition={isOpen ? "all 0.3s ease-out" : "all 0.5s ease-out"}
-            transform={isOpen ? "translateY(0)" : "translateY(100%)"}
-            opacity={isOpen ? 1 : 0}
             maxH="85vh"
             mt="15vh"
-            sx={{
-              '&[data-state="closed"]': {
-                transform: 'translateY(100%)',
-                opacity: 0
-              }
-            }}
           >
             <DrawerHeader borderBottomWidth={showResults ? "1px" : "0px"} borderColor="gray.200">
               {renderHeader()}
