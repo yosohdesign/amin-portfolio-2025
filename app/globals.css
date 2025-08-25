@@ -5,6 +5,12 @@ html {
   scroll-padding-top: 20px; /* Keep padding for fixed headers */
 }
 
+/* Prevent horizontal overflow */
+html, body {
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
 /* Additional optimizations for smoother scrolling */
 html, body {
   -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */

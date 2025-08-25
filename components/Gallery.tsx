@@ -176,8 +176,8 @@ export default function Gallery({ images, isVisible = false }: GalleryProps) {
       gridTemplateColumns="repeat(2, 1fr)"
       gap={4}
       p={0}
-      mt={{ base: "4", lg: "-20vh" }}
-      mb={{ base: "4", lg: "-20vh" }}
+      mt={{ base: "4", lg: "0" }}
+      mb={{ base: "4", lg: "0" }}
     >
       {renderImageColumn(images.left, scrollAnimation1, 90, 0)}
       {renderImageColumn(images.right, scrollAnimation2, 120, 1)}

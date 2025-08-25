@@ -78,7 +78,7 @@ export default function FloatingNavbar({ isHero = false }: FloatingNavbarProps) 
           py={{ base: 2, md: 3 }}
           display="inline-flex"
           w="fit-content"
-          maxW={{ base: 'calc(100vw - 32px)', md: 'none' }}
+          maxW={{ base: 'calc(100vw - 64px)', md: 'none' }}
         >
           <Flex alignItems="center" justifyContent="space-between" gap={{ base: 4, md: 8 }}>
             {/* Navigation Links */}
@@ -180,7 +180,7 @@ export default function FloatingNavbar({ isHero = false }: FloatingNavbarProps) 
         py={{ base: 3, md: 3 }}
         display="inline-flex"
         w="fit-content"
-        maxW={{ base: 'calc(100vw - 32px)', md: 'none' }}
+        maxW={{ base: 'calc(100vw - 64px)', md: 'none' }}
         minW={{ base: 'auto', md: 'max-content' }}
       >
         <Flex alignItems="center" justifyContent="space-between" gap={{ base: 4, md: 6 }}>
