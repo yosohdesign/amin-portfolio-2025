@@ -598,7 +598,7 @@ export default function RoleMatcherModal({ isOpen, onClose }: RoleMatcherModalPr
               <VStack spacing={7} align="stretch" py={6}>
                 {/* Quick Take */}
                 <Box>
-                  <Text fontWeight="semibold" color="blue.600" fontSize="lg" mb={3}>
+                  <Text fontWeight="semibold" color="blue.600" fontSize={isMobile ? "md" : "lg"} mb={3}>
                     Quick take
                   </Text>
                   <Text fontSize="md" color="gray.700" lineHeight="1.6">
@@ -608,7 +608,7 @@ export default function RoleMatcherModal({ isOpen, onClose }: RoleMatcherModalPr
 
                 {/* Summary */}
                 <Box>
-                  <Text fontWeight="semibold" color="blue.600" fontSize="lg" mb={3}>
+                  <Text fontWeight="semibold" color="blue.600" fontSize={isMobile ? "md" : "lg"} mb={3}>
                     Summary
                   </Text>
                   <Text fontSize="md" color="gray.700" lineHeight="1.6">
@@ -619,7 +619,7 @@ export default function RoleMatcherModal({ isOpen, onClose }: RoleMatcherModalPr
                 {/* Strengths */}
                 {matchResult!.strengths.length > 0 && (
                   <Box>
-                    <Text fontWeight="semibold" color="blue.600" fontSize="lg" mb={3}>
+                    <Text fontWeight="semibold" color="blue.600" fontSize={isMobile ? "md" : "lg"} mb={3}>
                       Matching strengths
                     </Text>
                     <VStack spacing={2} align="start">
@@ -635,7 +635,7 @@ export default function RoleMatcherModal({ isOpen, onClose }: RoleMatcherModalPr
                 {/* Project */}
                 {matchResult!.project && (
                   <Box>
-                    <Text fontWeight="semibold" color="blue.600" fontSize="lg" mb={3}>
+                    <Text fontWeight="semibold" color="blue.600" fontSize={isMobile ? "md" : "lg"} mb={3}>
                       Reference project
                     </Text>
                     <Box>
@@ -643,7 +643,7 @@ export default function RoleMatcherModal({ isOpen, onClose }: RoleMatcherModalPr
                         {matchResult!.project.title}
                       </Text>
                       <Text color="gray.700" fontSize="md">
-                        {matchResult!.project.line}
+                        <MarkdownText>{matchResult!.project.line}</MarkdownText>
                       </Text>
                     </Box>
                   </Box>
@@ -652,7 +652,7 @@ export default function RoleMatcherModal({ isOpen, onClose }: RoleMatcherModalPr
                 {/* Gaps - Where I'd Grow */}
                 {matchResult!.gaps && matchResult!.gaps.length > 0 && (
                   <Box>
-                    <Text fontWeight="semibold" color="blue.600" fontSize="lg" mb={3}>
+                    <Text fontWeight="semibold" color="blue.600" fontSize={isMobile ? "md" : "lg"} mb={3}>
                       Where I'd Grow
                     </Text>
                     <VStack spacing={2} align="start">
@@ -668,7 +668,7 @@ export default function RoleMatcherModal({ isOpen, onClose }: RoleMatcherModalPr
                 {/* Closing Line */}
                 {matchResult!.closing && (
                   <Box>
-                    <Text fontWeight="semibold" color="blue.600" fontSize="lg" mb={3}>
+                    <Text fontWeight="semibold" color="blue.600" fontSize={isMobile ? "md" : "lg"} mb={3}>
                       Next steps
                     </Text>
                     <Text fontSize="md" color="gray.700" lineHeight="1.6">
@@ -682,7 +682,7 @@ export default function RoleMatcherModal({ isOpen, onClose }: RoleMatcherModalPr
             <VStack spacing={7} align="stretch" py={6}>
               {/* Quick Take */}
               <Box>
-                <Text fontWeight="semibold" color="blue.600" fontSize="lg" mb={3}>
+                <Text fontWeight="semibold" color="blue.600" fontSize={isMobile ? "md" : "lg"} mb={3}>
                   Quick take
                 </Text>
                 <Text fontSize="md" color="gray.700" lineHeight="1.6">
@@ -692,7 +692,7 @@ export default function RoleMatcherModal({ isOpen, onClose }: RoleMatcherModalPr
 
               {/* Summary */}
               <Box>
-                <Text fontWeight="semibold" color="blue.600" fontSize="lg" mb={3}>
+                <Text fontWeight="semibold" color="blue.600" fontSize={isMobile ? "md" : "lg"} mb={3}>
                   Summary
                 </Text>
                 <Text fontSize="md" color="gray.700" lineHeight="1.6">
@@ -703,9 +703,9 @@ export default function RoleMatcherModal({ isOpen, onClose }: RoleMatcherModalPr
               {/* Strengths */}
               {matchResult!.strengths.length > 0 && (
                 <Box>
-                  <Text fontWeight="semibold" color="blue.600" fontSize="lg" mb={3}>
-                    Matching strengths
-                  </Text>
+                                  <Text fontWeight="semibold" color="blue.600" fontSize={isMobile ? "md" : "lg"} mb={3}>
+                  Matching strengths
+                </Text>
                   <VStack spacing={2} align="start">
                     {matchResult!.strengths.map((strength, index) => (
                       <Text key={index} color="gray.700" fontSize="md">
@@ -719,15 +719,15 @@ export default function RoleMatcherModal({ isOpen, onClose }: RoleMatcherModalPr
               {/* Project */}
               {matchResult!.project && (
                 <Box>
-                  <Text fontWeight="semibold" color="blue.600" fontSize="lg" mb={3}>
-                    Reference project
-                  </Text>
+                                  <Text fontWeight="semibold" color="blue.600" fontSize={isMobile ? "md" : "lg"} mb={3}>
+                  Reference project
+                </Text>
                   <Box>
                     <Text fontWeight="medium" color="gray.800" fontSize="md" mb={1}>
                       {matchResult!.project.title}
                     </Text>
                     <Text color="gray.700" fontSize="md">
-                      {matchResult!.project.line}
+                      <MarkdownText>{matchResult!.project.line}</MarkdownText>
                     </Text>
                   </Box>
                 </Box>
@@ -736,9 +736,9 @@ export default function RoleMatcherModal({ isOpen, onClose }: RoleMatcherModalPr
               {/* Gaps - Where I'd Grow */}
               {matchResult!.gaps && matchResult!.gaps.length > 0 && (
                 <Box>
-                  <Text fontWeight="semibold" color="blue.600" fontSize="lg" mb={3}>
-                    Where I'd Grow
-                  </Text>
+                                  <Text fontWeight="semibold" color="blue.600" fontSize={isMobile ? "md" : "lg"} mb={3}>
+                  Where I'd Grow
+                </Text>
                   <VStack spacing={2} align="start">
                     {matchResult!.gaps.map((gap, index) => (
                       <Text key={index} color="gray.700" fontSize="md">
@@ -752,9 +752,9 @@ export default function RoleMatcherModal({ isOpen, onClose }: RoleMatcherModalPr
               {/* Closing Line */}
               {matchResult!.closing && (
                 <Box>
-                  <Text fontWeight="semibold" color="blue.600" fontSize="lg" mb={3}>
-                    Next steps
-                  </Text>
+                                  <Text fontWeight="semibold" color="blue.600" fontSize={isMobile ? "md" : "lg"} mb={3}>
+                  Next steps
+                </Text>
                   <Text fontSize="md" color="gray.700" lineHeight="1.6">
                     {matchResult!.closing}
                   </Text>
@@ -775,7 +775,7 @@ export default function RoleMatcherModal({ isOpen, onClose }: RoleMatcherModalPr
         <HStack spacing={4} w="full">
           <Button
             onClick={() => fileInputRef.current?.click()}
-            size="lg"
+            size={isMobile ? "md" : "lg"}
             variant="outline"
             colorScheme="gray"
             borderColor="gray.300"
@@ -786,9 +786,9 @@ export default function RoleMatcherModal({ isOpen, onClose }: RoleMatcherModalPr
             }}
             transition="all 0.2s"
             borderRadius="lg"
-            px={8}
-            py={4}
-            fontSize="lg"
+            px={isMobile ? 4 : 8}
+            py={isMobile ? 3 : 4}
+            fontSize={isMobile ? "md" : "lg"}
             fontWeight="medium"
             flex={1}
             leftIcon={<FiUpload />}
@@ -799,17 +799,17 @@ export default function RoleMatcherModal({ isOpen, onClose }: RoleMatcherModalPr
           <Button
             onClick={handleAnalyze}
             isLoading={isAnalyzing}
-            loadingText="Analyzing match"
-            size="lg"
+            loadingText={isMobile ? "Analyzing" : "Analyzing match"}
+            size={isMobile ? "md" : "lg"}
             variant="solid"
             bg="gray.900"
             color="white"
             _hover={{ bg: 'gray.800', transform: 'translateY(-1px)' }}
             transition="all 0.2s"
             borderRadius="lg"
-            px={8}
-            py={4}
-            fontSize="lg"
+            px={isMobile ? 4 : 8}
+            py={isMobile ? 3 : 4}
+            fontSize={isMobile ? "md" : "lg"}
             fontWeight="medium"
             flex={1}
             isDisabled={isAnalyzing}
@@ -826,15 +826,15 @@ export default function RoleMatcherModal({ isOpen, onClose }: RoleMatcherModalPr
               setMatchResult(null)
               setValidationMessage('')
             }}
-            size="lg"
+            size={isMobile ? "md" : "lg"}
             variant="outline"
             colorScheme="gray"
             borderColor="gray.400"
             color="gray.800"
             borderRadius="lg"
-            px={8}
-            py={4}
-            fontSize="lg"
+            px={isMobile ? 4 : 8}
+            py={isMobile ? 3 : 4}
+            fontSize={isMobile ? "md" : "lg"}
             fontWeight="medium"
             flex={1}
             _hover={{ 
@@ -847,20 +847,20 @@ export default function RoleMatcherModal({ isOpen, onClose }: RoleMatcherModalPr
           <Button
             onClick={() => {
               const subject = 'Role Match Inquiry'
-              const body = `Hi Amin,\n\nI analyzed a role with your portfolio and would like to get in touch.\n\nJob requirements: ${jobRequirements.slice(0, 200)}...`
+              const body = `Hi Amin,\n\nI analyzed a role with your portfolio and would like to get in touch.`
               const mailtoLink = `mailto:yosoh.amin@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
               window.open(mailtoLink)
             }}
-            size="lg"
+            size={isMobile ? "md" : "lg"}
             variant="solid"
             bg="gray.900"
             color="white"
             _hover={{ bg: 'gray.800', transform: 'translateY(-1px)' }}
             transition="all 0.2s"
             borderRadius="lg"
-            px={8}
-            py={4}
-            fontSize="lg"
+            px={isMobile ? 4 : 8}
+            py={isMobile ? 3 : 4}
+            fontSize={isMobile ? "md" : "lg"}
             fontWeight="medium"
             flex={1}
           >
@@ -874,11 +874,11 @@ export default function RoleMatcherModal({ isOpen, onClose }: RoleMatcherModalPr
   // Shared header component
   const renderHeader = () => (
     <>
-      <Heading size="lg" color="gray.800" fontWeight="normal">
+      <Heading size={isMobile ? "md" : "lg"} color="gray.800" fontWeight="normal">
         Role match analysis
       </Heading>
       {!showResults && (
-        <Text fontSize="md" color="gray.600" fontWeight="normal" mt={2}>
+        <Text fontSize={isMobile ? "sm" : "md"} color="gray.600" fontWeight="normal" mt={2}>
           Paste your job requirements below and I'll analyze how well my profile matches your needs.
         </Text>
       )}
