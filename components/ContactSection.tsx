@@ -9,7 +9,7 @@ import {
   Button,
   useColorModeValue,
 } from '@chakra-ui/react'
-import { EmailIcon } from '@chakra-ui/icons'
+import { Envelope } from '@phosphor-icons/react'
 import { useEffect, useState, useRef } from 'react'
 
 export default function ContactSection() {
@@ -91,7 +91,7 @@ export default function ContactSection() {
             py={3}
             fontSize={{ base: 'md', lg: 'lg' }}
             fontWeight="medium"
-            leftIcon={<EmailIcon />}
+            leftIcon={<Envelope size={20} weight="regular" />}
             _hover={{ 
               bg: 'gray.50',
               borderColor: 'gray.500',

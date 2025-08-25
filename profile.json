@@ -235,6 +235,79 @@
       ]
     }
   ],
+  "output_prefs": {
+    "must_mention_company": false,
+    "must_reference_ad_text": true,
+    "reference_policy": {
+      "min_direct_quotes": 1,
+      "max_direct_quotes": 2,
+      "max_quote_words": 8,
+      "allowed_sections": ["requirements", "responsibilities", "about the role"],
+      "phrasing_examples": [
+        "Your requirement to **\"design end-to-end user journeys\"** aligns with my work on …",
+        "I relate strongly to your focus on **\"research and usability testing\"**, which has been central in …"
+      ]
+    },
+    "ad_reference_policy": {
+      "min_references": 1,
+      "max_references": 2,
+      "reference_types": ["requirement_noun", "team_name", "product_or_feature"],
+      "phrasing_examples": [
+        "The focus on {{requirement_noun}} aligns with my work on …",
+        "Your {{product_or_feature}} roadmap mirrors challenges I solved at …"
+      ],
+      "require_profile_evidence": true,
+      "fallback_phrases": ["familiar with", "adjacent to", "interested in applying my approach to"],
+      "forbidden_claim_verbs": ["experienced in", "have deep experience in", "expert in"]
+    }
+  },
+  "provenance_rules": {
+    "ad_noun_requires_profile_match": true,
+    "profile_match_fields": ["experiences.highlights", "projects.evidence", "skills", "domains"],
+    "soften_if_no_match": true,
+    "soften_templates": [
+      "I'm familiar with {{noun}} and would apply my research‑first approach here.",
+      "My work in {{adjacent_area}} translates well to {{noun}}.",
+      "I haven't built {{noun}} directly, but the constraints are similar to {{adjacent_area}} I've shipped."
+    ]
+  },
+  "evidence_style": {
+    "rules": [
+      "Include at least one specific noun from the ad (e.g., 'design system', 'accessibility', 'analytics dashboard').",
+      "Name exactly one of my experiences or projects as proof.",
+      "Avoid vague claims without a named reference.",
+      "When lifting a noun from the ad, cite one concrete project/experience from the profile that supports it; otherwise use a softener from provenance_rules.soften_templates and avoid 'experienced in' / 'expert in' verbs."
+    ],
+    "preferred_connectors": ["which matches", "aligns with", "similar to", "I solved this by"]
+  },
+  "consulting_policy": {
+    "stance": "selective_cautious",
+    "conditions": [
+      "Remote-first collaboration with clear ownership",
+      "Research and usability are part of the process",
+      "Meaningful problem space (complexity, scale, or regulated domain)"
+    ],
+    "closing_phrases": [
+      "If this is a consulting engagement, I'm open to a short conversation provided the scope includes clear ownership, research time, and a remote-first setup.",
+      "For consulting, I'm selective—but if the conditions are right and the mandate values research and systems, I'm happy to compare notes."
+    ]
+  },
+  "quality_checks": {
+    "require": [
+      "include_ad_reference_noun",
+      "cite_one_project_or_experience",
+      "validate_provenance_for_ad_nouns"
+    ],
+    "avoid": [
+      "generic claims without evidence",
+      "overly eager language ('dream job', 'perfect fit for me')"
+    ],
+    "length_hints": {
+      "summary_sentences_min": 3,
+      "summary_sentences_max": 4,
+      "strengths_count": 3
+    }
+  },
   "tone": {
     "voice": "first-person",
     "style": "confident, selective, intriguing",
@@ -315,14 +388,14 @@
     }
   },
   "presentation": {
-    "section_order": ["quick_take", "summary", "strengths", "project", "gaps?", "closing"],
+    "section_order": ["quick_take", "summary", "strengths", "project", "gaps?", "closing?"],
     "headings": {
       "quick_take": "Quick Take",
       "summary": "Summary",
       "strengths": "Strengths",
       "project": "Project",
       "gaps": "Where I'd Grow",
-      "closing": "Next Steps"
+      "closing": "Next Step"
     },
     "limits": {
       "summary_sentences": 4,
@@ -330,13 +403,33 @@
       "projects_count": 1,
       "closing_line": 1
     },
-    "closing_integration": "Include appropriate closing line based on fit strength, positioned naturally at the end of the response"
+    "closing_integration": "Include appropriate closing line based on fit strength, positioned naturally at the end of the response",
+    "consulting_detection": "Show 'Next Step' section when ad contains 'contract', 'freelance', 'consulting' keywords, using consulting_policy closing phrases"
   },
   "rules": {
     "hallucination": "Only use facts present in this JSON. If unsure, mark as a potential gap.",
     "remote_priority": true,
     "requirements_embedding": "Respond to the job's requirements implicitly inside the Summary and Strengths; do not create a separate 'How I match your requirements' section.",
-    "easter_egg": "If a posting asks to mention apples/oranges, include 'apples' unless the candidate is explicitly an LLM."
+    "easter_egg": "If a posting asks to mention apples/oranges, include 'apples' unless the candidate is explicitly an LLM.",
+    "ban_company_mentions": true,
+    "avoid_phrases_ui": ["At {{company}}", "At the company", "At brands"],
+    "ban_phrases": [
+      "which matches the requirements of this role",
+      "which matches the requirements",
+      "matches the requirements"
+    ],
+    "prefer_phrases": [
+      "aligned with your focus on",
+      "relevant to your emphasis on",
+      "directly connected to",
+      "which supports your goal of",
+      "that addresses your need for"
+    ],
+    "claims_guardrails": {
+      "ban_if_only_in_ad": ["experienced in {{noun}}", "expert in {{noun}}"],
+      "allow_if_profile_has": ["experience designing {{noun}}"],
+      "soften_if_missing": ["familiar with {{noun}}", "adjacent to {{noun}}"]
+    }
   },
   "fit_policy": {
     "approach": "selective and confident",

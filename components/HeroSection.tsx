@@ -84,6 +84,8 @@ export default function HeroSection() {
           transformOrigin: 'center top',
         }}
       >
+
+
         <Container maxW="container.2xl" px={{ base: 4, lg: 8 }} h="100vh">
           <Grid
             templateColumns={{ base: '1fr', lg: '1fr 1fr' }}
@@ -141,8 +143,7 @@ export default function HeroSection() {
                   transition="opacity 0.8s ease-out, transform 0.8s ease-out"
                   transitionDelay="0.6s"
                 >
-                  Dedicated to creative problem-solving and committed to crafting genuine user experiences. 
-                  I focus on simplifying complex processes and user journeys, turning them into innovative and modern solutions.
+                  Designing with clarity and intent, I bring structure to complex problems and create experiences people can rely on.
                 </Text>
                 
                 {/* Role Match Button */}
@@ -167,6 +168,7 @@ export default function HeroSection() {
                   transition="opacity 0.8s ease-out, transform 0.8s ease-out"
                   transitionDelay="0.8s"
                   leftIcon={<Sparkle color="blue.400" weight="regular" />}
+                  className="shimmer-button"
                 >
                   Role match me
                 </Button>

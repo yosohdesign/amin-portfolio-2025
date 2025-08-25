@@ -24,10 +24,13 @@
     "framer-motion": "^12.23.12",
     "lottie-react": "^2.4.1",
     "next": "^14.2.32",
+    "pdfjs-dist": "^5.4.54",
     "react": "^18",
     "react-dom": "^18",
+    "react-icons": "^5.5.0",
     "react-player": "^3.3.1",
-    "sharp": "^0.34.3"
+    "sharp": "^0.34.3",
+    "tesseract.js": "^6.0.1"
   },
   "devDependencies": {
     "@types/node": "^20",

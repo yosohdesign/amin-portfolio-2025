@@ -74,8 +74,9 @@ export default function ProcessSection() {
       const scrollPosition = window.scrollY
       const windowHeight = window.innerHeight
       
-      // Calculate total scrollable height for the process section
-      const sectionHeight = 320
+      // Get section heights based on screen size
+      const isMobile = window.innerWidth < 1024 // lg breakpoint
+      const sectionHeight = isMobile ? 420 : 320
       
       // Calculate which section we're currently in and progress within it
       let currentSection = 0
@@ -109,9 +110,13 @@ export default function ProcessSection() {
     }
 
     window.addEventListener('scroll', handleScroll)
+    window.addEventListener('resize', handleScroll) // Handle resize/rotation
     handleScroll() // Initial call
     
-    return () => window.removeEventListener('scroll', handleScroll)
+    return () => {
+      window.removeEventListener('scroll', handleScroll)
+      window.removeEventListener('resize', handleScroll)
+    }
   }, [processSteps.length])
 
   // Generate all digits for smooth scroll-based rolling animation
@@ -242,18 +247,53 @@ export default function ProcessSection() {
               <GridItem>
                 {processSteps.map((step, index) => {
                   // Determine if this section is currently active
-                  const isSectionActive = scrollProgress >= index && scrollProgress < index + 1
+                  // Use a more generous threshold for mobile to ensure proper activation
+                  const isSectionActive = scrollProgress >= index && scrollProgress < index + 1.2
+                  
+                  // Additional mobile-specific activation check for more precise control
+                  const [isMobileActive, setIsMobileActive] = useState(false)
+                  const sectionRef = useRef<HTMLDivElement>(null)
+                  
+                  useEffect(() => {
+                    const checkMobileActivation = () => {
+                      if (!sectionRef.current) return
+                      
+                      const rect = sectionRef.current.getBoundingClientRect()
+                      const windowHeight = window.innerHeight
+                      const sectionCenter = rect.top + rect.height / 2
+                      const viewportCenter = windowHeight / 2
+                      
+                      // Consider section active when its center is within the viewport center ± 100px
+                      const isActive = Math.abs(sectionCenter - viewportCenter) < 100
+                      setIsMobileActive(isActive)
+                    }
+                    
+                    checkMobileActivation()
+                    window.addEventListener('scroll', checkMobileActivation)
+                    window.addEventListener('resize', checkMobileActivation)
+                    
+                    return () => {
+                      window.removeEventListener('scroll', checkMobileActivation)
+                      window.removeEventListener('resize', checkMobileActivation)
+                    }
+                  }, [])
+                  
+                  // Use mobile-specific activation on mobile devices
+                  const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024
+                  const finalIsActive = isMobile ? isMobileActive : isSectionActive
+                  
                   const isLastSection = index === processSteps.length - 1
                   
                   return (
                     <Box
                       key={index}
+                      ref={sectionRef}
                       minH={{ base: "420px", lg: "320px" }}
                       display="flex"
                       flexDirection="column"
                       justifyContent="center"
                       borderTop="2px solid"
-                      borderTopColor={isSectionActive ? "#3575D9" : "gray.200"}
+                      borderTopColor={finalIsActive ? "#3575D9" : "gray.200"}
                       borderBottom={isLastSection ? "2px solid" : "none"}
                       borderBottomColor={isLastSection ? "gray.200" : "transparent"}
                       position="relative"
@@ -271,7 +311,7 @@ export default function ProcessSection() {
                         display={{ base: 'block', lg: 'none' }}
                       >
                         <Text as="span" color="blue.400" opacity="0.25">0</Text>
-                        <Text as="span" color={isSectionActive ? "#3575D9" : "blue.400"} opacity={isSectionActive ? 1 : 0.25} transition="color 0.3s ease, opacity 0.3s ease">
+                        <Text as="span" color={finalIsActive ? "#3575D9" : "blue.400"} opacity={finalIsActive ? 1 : 0.25} transition="color 0.3s ease, opacity 0.3s ease">
                           {step.step === '01' ? '1' : step.step === '02' ? '2' : step.step === '03' ? '3' : '4'}
                         </Text>
                       </Text>

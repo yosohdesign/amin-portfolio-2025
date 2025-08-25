@@ -29,10 +29,42 @@ import {
   Skeleton,
   Icon,
   useBreakpointValue,
+  Input,
+  IconButton,
+  Tooltip,
 } from '@chakra-ui/react'
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { MatchOutput } from '@/lib/gemini-ai'
 import profileData from '@/profile.json'
+import { FiUpload, FiX } from 'react-icons/fi'
+import Tesseract from 'tesseract.js'
+
+// Simple markdown renderer for bold quotes
+const MarkdownText = ({ children }: { children: string }) => {
+  if (!children) return null
+  
+  // Split by bold markers and render accordingly
+  const parts = children.split(/(\*\*[^*]+\*\*)/g)
+  
+  return (
+    <>
+      {parts.map((part, index) => {
+        if (part.startsWith('**') && part.endsWith('**')) {
+          // Bold text - remove the ** markers and render as bold
+          const boldText = part.slice(2, -2)
+          return (
+            <Text as="span" key={index} fontWeight="bold" color="gray.800">
+              {boldText}
+            </Text>
+          )
+        } else {
+          // Regular text
+          return <Text as="span" key={index}>{part}</Text>
+        }
+      })}
+    </>
+  )
+}
 
 interface RoleMatcherModalProps {
   isOpen: boolean
@@ -45,9 +77,111 @@ export default function RoleMatcherModal({ isOpen, onClose }: RoleMatcherModalPr
   const [matchResult, setMatchResult] = useState<MatchOutput | null>(null)
   const [showResults, setShowResults] = useState(false)
   const [validationMessage, setValidationMessage] = useState('')
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null)
+  const [isProcessingFile, setIsProcessingFile] = useState(false)
+  const [extractedText, setExtractedText] = useState('')
+  const fileInputRef = useRef<HTMLInputElement>(null)
   
   // Use drawer on mobile, modal on desktop
   const isMobile = useBreakpointValue({ base: true, lg: false })
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf', 'text/plain']
+    if (!allowedTypes.includes(file.type)) {
+      setValidationMessage('Please upload a valid file type: JPG, PNG, PDF, or TXT')
+      return
+    }
+
+    // Validate file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      setValidationMessage('File size must be less than 10MB')
+      return
+    }
+
+    setUploadedFile(file)
+    setValidationMessage('')
+    setIsProcessingFile(true)
+
+    try {
+      let text = ''
+      
+      if (file.type === 'text/plain') {
+        // Handle text files
+        text = await file.text()
+        console.log('Text file processed:', text.substring(0, 100))
+      } else if (file.type.startsWith('image/')) {
+        // Extract text from images using OCR
+        try {
+          const result = await Tesseract.recognize(file, 'eng', {
+            logger: m => console.log(m)
+          })
+          text = result.data.text.trim()
+          console.log('Image OCR completed, extracted text length:', text.length)
+          
+          if (!text || text.trim().length === 0) {
+            text = `[Image uploaded: ${file.name}]\n\nNo text could be extracted from this image. Please describe the job requirements manually.`
+          }
+        } catch (ocrError) {
+          console.error('OCR processing error:', ocrError)
+          text = `[Image uploaded: ${file.name}]\n\nOCR processing failed. Please describe the job requirements manually.`
+        }
+      } else if (file.type === 'application/pdf') {
+        try {
+          // For PDFs, we'll extract text using browser APIs
+          const arrayBuffer = await file.arrayBuffer()
+          const pdfjsLib = await import('pdfjs-dist')
+          
+          // Set up PDF.js worker
+          if (typeof window !== 'undefined' && 'Worker' in window) {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`
+          }
+          
+          const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
+          let fullText = ''
+          
+          for (let i = 1; i <= pdf.numPages; i++) {
+            const page = await pdf.getPage(i)
+            const textContent = await page.getTextContent()
+            const pageText = textContent.items.map((item: any) => item.str).join(' ')
+            fullText += pageText + '\n'
+          }
+          
+          text = fullText.trim()
+          console.log('PDF processed, pages:', pdf.numPages, 'text length:', text.length)
+          
+          if (!text || text.trim().length === 0) {
+            text = `[PDF uploaded: ${file.name}]\n\nNo text could be extracted from this PDF. Please copy and paste the job requirements manually.`
+          }
+        } catch (pdfError) {
+          console.error('PDF processing error:', pdfError)
+          text = `[PDF uploaded: ${file.name}]\n\nPDF processing failed. Please copy and paste the job requirements manually.`
+        }
+      }
+
+      console.log('Final extracted text:', text.substring(0, 200))
+      setExtractedText(text)
+      setJobRequirements(text)
+      setIsProcessingFile(false)
+    } catch (error) {
+      console.error('File processing error:', error)
+      setValidationMessage('Error processing file. Please try again or paste the text manually.')
+      setIsProcessingFile(false)
+      setUploadedFile(null)
+    }
+  }
+
+  const handleRemoveFile = () => {
+    setUploadedFile(null)
+    setExtractedText('')
+    setJobRequirements('')
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }
 
   const handleAnalyze = async () => {
     if (!jobRequirements.trim()) {
@@ -81,6 +215,11 @@ export default function RoleMatcherModal({ isOpen, onClose }: RoleMatcherModalPr
     setMatchResult(null)
     setShowResults(false)
     setValidationMessage('')
+    setUploadedFile(null)
+    setExtractedText('')
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
     onClose()
   }
 
@@ -137,33 +276,260 @@ export default function RoleMatcherModal({ isOpen, onClose }: RoleMatcherModalPr
         /* Input State */
         <VStack spacing={6} align="stretch" flex="1" justify="center">
           {!isMobile && (
-                         <Box 
-               minH="400px"
-               display="flex" 
-               flexDirection="column"
-             >
+            <Box 
+              minH="400px"
+              display="flex" 
+              flexDirection="column"
+            >
               <VStack spacing={6} align="stretch" flex="1" justify="center">
                 {isAnalyzing ? (
-                  <VStack spacing={6} justify="center" align="center" flex="1">
-                    <Spinner size="lg" color="blue.500" thickness="3px" />
-                    <Text fontSize="lg" color="gray.700" fontWeight="medium">
-                      Analyzing your requirements...
-                    </Text>
-                    <Text fontSize="sm" color="gray.500" textAlign="center">
-                      Matching against my experience and projects
-                    </Text>
-                    
-                    {/* Subtle loading skeleton */}
-                    <VStack spacing={3} align="center" w="full" maxW="400px">
-                      <Skeleton height="20px" width="80%" borderRadius="md" />
-                      <Skeleton height="16px" width="60%" borderRadius="md" />
-                      <Skeleton height="16px" width="70%" borderRadius="md" />
+                  <VStack spacing={6} justify="center" align="stretch" flex="1">
+                    {/* Comprehensive loading skeleton */}
+                    <VStack spacing={6} align="stretch" w="full">
+                      {/* Quick take section */}
+                      <Box>
+                        <Skeleton height="24px" width="120px" borderRadius="md" mb={4} />
+                        <VStack spacing={3} align="stretch">
+                          <Skeleton height="16px" width="100%" borderRadius="md" />
+                          <Skeleton height="16px" width="90%" borderRadius="md" />
+                          <Skeleton height="16px" width="75%" borderRadius="md" />
+                        </VStack>
+                      </Box>
+                      
+                      {/* Summary section */}
+                      <Box>
+                        <Skeleton height="24px" width="80px" borderRadius="md" mb={4} />
+                        <VStack spacing={3} align="stretch">
+                          <Skeleton height="16px" width="100%" borderRadius="md" />
+                          <Skeleton height="16px" width="95%" borderRadius="md" />
+                          <Skeleton height="16px" width="85%" borderRadius="md" />
+                          <Skeleton height="16px" width="70%" borderRadius="md" />
+                        </VStack>
+                      </Box>
+                      
+                      {/* Strengths section */}
+                      <Box>
+                        <Skeleton height="24px" width="140px" borderRadius="md" mb={4} />
+                        <VStack spacing={3} align="stretch">
+                          <Skeleton height="16px" width="80%" borderRadius="md" />
+                          <Skeleton height="16px" width="90%" borderRadius="md" />
+                          <Skeleton height="16px" width="65%" borderRadius="md" />
+                        </VStack>
+                      </Box>
+                      
+                      {/* Project section */}
+                      <Box>
+                        <Skeleton height="24px" width="130px" borderRadius="md" mb={4} />
+                        <VStack spacing={3} align="stretch">
+                          <Skeleton height="20px" width="60%" borderRadius="md" />
+                          <Skeleton height="16px" width="85%" borderRadius="md" />
+                        </VStack>
+                      </Box>
                     </VStack>
                   </VStack>
                 ) : (
                   <>
+                    <VStack spacing={4} align="stretch" w="full" flex="1">
+                      {uploadedFile && (
+                        <Box
+                          bg="gray.50"
+                          border="1px solid"
+                          borderColor="gray.200"
+                          borderRadius="lg"
+                          p={4}
+                        >
+                          <HStack spacing={3} align="center" justify="space-between">
+                            <HStack spacing={2} align="center">
+                              <Icon as={FiUpload} color="gray.600" boxSize={5} />
+                              <Text fontSize="sm" color="gray.700" fontWeight="medium">
+                                File uploaded: {uploadedFile.name}
+                                {isProcessingFile && (
+                                  <Text as="span" color="gray.500" ml={2}>
+                                    {uploadedFile.type.startsWith('image/') ? '(Extracting text with OCR...)' : '(Processing...)'}
+                                  </Text>
+                                )}
+                              </Text>
+                            </HStack>
+                            {!isProcessingFile && (
+                              <HStack spacing={2}>
+                                <Tooltip label="Remove file" placement="top">
+                                  <IconButton
+                                    aria-label="Remove file"
+                                    onClick={handleRemoveFile}
+                                    variant="ghost"
+                                    size="md"
+                                    color="gray.500"
+                                    _hover={{ color: 'red.500' }}
+                                    icon={<FiX />}
+                                  />
+                                </Tooltip>
+                              </HStack>
+                            )}
+                          </HStack>
+                        </Box>
+                      )}
+                      <Textarea
+                        placeholder={
+                          isProcessingFile 
+                            ? "Processing file... Please wait"
+                            : uploadedFile 
+                              ? "Text extracted from file (you can edit this)"
+                              : "Paste your job requirements here..."
+                        }
+                        value={jobRequirements}
+                        onChange={(e) => setJobRequirements(e.target.value)}
+                        size="lg"
+                        borderRadius="lg"
+                        rows={12}
+                        fontSize="md"
+                        resize="vertical"
+                        border="1px solid"
+                        borderColor="gray.300"
+                        _focus={{
+                          borderColor: 'blue.500',
+                          boxShadow: '0 0 0 1px var(--chakra-colors-blue-500)'
+                        }}
+                        flex="1"
+                        minH="200px"
+                        isDisabled={isProcessingFile}
+                      />
+                      
+                      {/* Validation Message */}
+                      {validationMessage && (
+                        <VStack spacing={3} align="stretch">
+                          <Alert 
+                            status={getErrorStatus(validationMessage)} 
+                            borderRadius="lg"
+                            variant="left-accent"
+                          >
+                            <AlertIcon />
+                            <AlertDescription>
+                              {validationMessage}
+                            </AlertDescription>
+                          </Alert>
+                          
+                          {/* Action button for critical errors */}
+                          {(validationMessage.includes('Daily AI analysis limit reached') || 
+                            validationMessage.includes('AI service temporarily unavailable')) && (
+                            <Button
+                              onClick={() => {
+                                const subject = 'Manual Role Analysis Request'
+                                const body = `Hi Amin,\n\nI tried to use your AI role matcher but it's currently unavailable.\n\nJob requirements: ${jobRequirements.slice(0, 300)}...\n\nCould you analyze this manually for me?`
+                                const mailtoLink = `mailto:yosoh.amin@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
+                                window.open(mailtoLink)
+                              }}
+                              size="md"
+                              variant="outline"
+                              colorScheme="blue"
+                            >
+                              Contact me for manual analysis
+                            </Button>
+                          )}
+                        </VStack>
+                      )}
+                    </VStack>
+                  </>
+                )}
+              </VStack>
+            </Box>
+          )}
+          {isMobile && (
+            <VStack spacing={6} align="stretch" flex="1" justify="center">
+              {isAnalyzing ? (
+                <VStack spacing={6} justify="center" align="stretch" flex="1">
+                  {/* Comprehensive loading skeleton */}
+                  <VStack spacing={6} align="stretch" w="full">
+                    {/* Quick take section */}
+                    <Box>
+                      <Skeleton height="24px" width="120px" borderRadius="md" mb={4} />
+                      <VStack spacing={3} align="stretch">
+                        <Skeleton height="16px" width="100%" borderRadius="md" />
+                        <Skeleton height="16px" width="90%" borderRadius="md" />
+                        <Skeleton height="16px" width="75%" borderRadius="md" />
+                      </VStack>
+                    </Box>
+                    
+                    {/* Summary section */}
+                    <Box>
+                      <Skeleton height="24px" width="80px" borderRadius="md" mb={4} />
+                      <VStack spacing={3} align="stretch">
+                        <Skeleton height="16px" width="100%" borderRadius="md" />
+                        <Skeleton height="16px" width="95%" borderRadius="md" />
+                        <Skeleton height="16px" width="85%" borderRadius="md" />
+                        <Skeleton height="16px" width="70%" borderRadius="md" />
+                      </VStack>
+                    </Box>
+                    
+                    {/* Strengths section */}
+                    <Box>
+                      <Skeleton height="24px" width="140px" borderRadius="md" mb={4} />
+                      <VStack spacing={3} align="stretch">
+                        <Skeleton height="16px" width="80%" borderRadius="md" />
+                        <Skeleton height="16px" width="90%" borderRadius="md" />
+                        <Skeleton height="16px" width="65%" borderRadius="md" />
+                        <Skeleton height="16px" width="75%" borderRadius="md" />
+                      </VStack>
+                    </Box>
+                    
+                    {/* Project section */}
+                    <Box>
+                      <Skeleton height="24px" width="130px" borderRadius="md" mb={4} />
+                      <VStack spacing={3} align="stretch">
+                        <Skeleton height="20px" width="60%" borderRadius="md" />
+                        <Skeleton height="16px" width="85%" borderRadius="md" />
+                      </VStack>
+                    </Box>
+                  </VStack>
+                </VStack>
+              ) : (
+                <>
+                  <VStack spacing={4} align="stretch" w="full" flex="1">
+                    {uploadedFile && (
+                      <Box
+                        bg="gray.50"
+                        border="1px solid"
+                        borderColor="gray.200"
+                        borderRadius="lg"
+                        p={4}
+                      >
+                        <HStack spacing={3} align="center" justify="space-between">
+                          <HStack spacing={2} align="center">
+                            <Icon as={FiUpload} color="gray.600" boxSize={5} />
+                            <Text fontSize="sm" color="gray.700" fontWeight="medium">
+                              File uploaded: {uploadedFile.name}
+                              {isProcessingFile && (
+                                <Text as="span" color="gray.500" ml={2}>
+                                  {uploadedFile.type.startsWith('image/') ? '(Extracting text with OCR...)' : '(Processing...)'}
+                                </Text>
+                              )}
+                            </Text>
+                          </HStack>
+                          {!isProcessingFile && (
+                            <HStack spacing={2}>
+                              <Tooltip label="Remove file" placement="top">
+                                <IconButton
+                                  aria-label="Remove file"
+                                  onClick={handleRemoveFile}
+                                  variant="ghost"
+                                  size="md"
+                                  color="gray.500"
+                                  _hover={{ color: 'red.500' }}
+                                  icon={<FiX />}
+                                />
+                              </Tooltip>
+                            </HStack>
+                          )}
+                        </HStack>
+                      </Box>
+                    )}
                     <Textarea
-                      placeholder="Paste your job requirements here..."
+                      placeholder={
+                        isProcessingFile 
+                          ? "Processing file... Please wait"
+                          : uploadedFile 
+                            ? "Text extracted from file (you can edit this)"
+                            : "Paste your job requirements here..."
+                      }
                       value={jobRequirements}
                       onChange={(e) => setJobRequirements(e.target.value)}
                       size="lg"
@@ -179,6 +545,7 @@ export default function RoleMatcherModal({ isOpen, onClose }: RoleMatcherModalPr
                       }}
                       flex="1"
                       minH="200px"
+                      isDisabled={isProcessingFile}
                     />
                     
                     {/* Validation Message */}
@@ -208,189 +575,26 @@ export default function RoleMatcherModal({ isOpen, onClose }: RoleMatcherModalPr
                             size="md"
                             variant="outline"
                             colorScheme="blue"
-
                           >
                             Contact me for manual analysis
                           </Button>
                         )}
                       </VStack>
                     )}
-                  </>
-                )}
-              </VStack>
-            </Box>
-          )}
-                    {isMobile && (
-            <VStack spacing={6} align="stretch" flex="1" justify="center">
-              {isAnalyzing ? (
-                <VStack spacing={6} justify="center" align="center" flex="1">
-                  <Spinner size="lg" color="blue.500" thickness="3px" />
-                  <Text fontSize="lg" color="gray.700" fontWeight="medium">
-                    Analyzing your requirements...
-                  </Text>
-                  <Text fontSize="md" color="gray.500" textAlign="center">
-                    Matching against my experience and projects
-                  </Text>
-                  
-                  {/* Subtle loading skeleton */}
-                  <VStack spacing={3} align="center" w="full" maxW="400px">
-                    <Skeleton height="20px" width="80%" borderRadius="md" />
-                    <Skeleton height="16px" width="60%" borderRadius="md" />
-                    <Skeleton height="16px" width="70%" borderRadius="md" />
                   </VStack>
-                </VStack>
-              ) : (
-                <>
-                  <Textarea
-                    placeholder="Paste your job requirements here..."
-                    value={jobRequirements}
-                    onChange={(e) => setJobRequirements(e.target.value)}
-                    size="lg"
-                    borderRadius="lg"
-                    rows={12}
-                    fontSize="md"
-                    resize="vertical"
-                    border="1px solid"
-                    borderColor="gray.300"
-                    _focus={{
-                      borderColor: 'blue.500',
-                      boxShadow: '0 0 0 1px var(--chakra-colors-blue-500)'
-                    }}
-                    flex="1"
-                    minH="200px"
-                  />
-                  
-                  {/* Validation Message */}
-                  {validationMessage && (
-                    <VStack spacing={3} align="stretch">
-                      <Alert 
-                        status={getErrorStatus(validationMessage)} 
-                        borderRadius="lg"
-                        variant="left-accent"
-                      >
-                        <AlertIcon />
-                        <AlertDescription>
-                          {validationMessage}
-                        </AlertDescription>
-                      </Alert>
-                      
-                      {/* Action button for critical errors */}
-                      {(validationMessage.includes('Daily AI analysis limit reached') || 
-                        validationMessage.includes('AI service temporarily unavailable')) && (
-                        <Button
-                          onClick={() => {
-                            const subject = 'Manual Role Analysis Request'
-                            const body = `Hi Amin,\n\nI tried to use your AI role matcher but it's currently unavailable.\n\nJob requirements: ${jobRequirements.slice(0, 300)}...\n\nCould you analyze this manually for me?`
-                            const mailtoLink = `mailto:yosoh.amin@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
-                            window.open(mailtoLink)
-                          }}
-                          size="md"
-                          variant="outline"
-                          colorScheme="blue"
-
-                        >
-                          Contact me for manual analysis
-                        </Button>
-                      )}
-                    </VStack>
-                  )}
                 </>
               )}
             </VStack>
           )}
-      </VStack>
+        </VStack>
       ) : (
-          /* Results State */
-          <VStack spacing={7} align="stretch" flex="1" justify="start">
-            {!isMobile ? (
-                             <Box 
-                 minH="400px"
-                 overflow="auto"
-               >
-                                 <VStack spacing={7} align="stretch" py={6}>
-                  {/* Quick Take */}
-                  <Box>
-                    <Text fontWeight="semibold" color="blue.600" fontSize="lg" mb={3}>
-                      Quick take
-                    </Text>
-                    <Text fontSize="md" color="gray.700" lineHeight="1.6">
-                      {matchResult!.quick_take}
-                    </Text>
-                  </Box>
-
-                  {/* Summary */}
-                  <Box>
-                    <Text fontWeight="semibold" color="blue.600" fontSize="lg" mb={3}>
-                      Summary
-                    </Text>
-                    <Text fontSize="md" color="gray.700" lineHeight="1.6">
-                      {matchResult!.summary}
-                    </Text>
-                  </Box>
-
-                  {/* Strengths */}
-                  {matchResult!.strengths.length > 0 && (
-                    <Box>
-                      <Text fontWeight="semibold" color="blue.600" fontSize="lg" mb={3}>
-                        Matching strengths
-                      </Text>
-                      <VStack spacing={2} align="start">
-                        {matchResult!.strengths.map((strength, index) => (
-                          <Text key={index} color="gray.700" fontSize="md">
-                            • {strength}
-                          </Text>
-                        ))}
-                      </VStack>
-                    </Box>
-                  )}
-
-                  {/* Project */}
-                  {matchResult!.project && (
-                    <Box>
-                      <Text fontWeight="semibold" color="blue.600" fontSize="lg" mb={3}>
-                        Reference project
-                      </Text>
-                      <Box>
-                        <Text fontWeight="medium" color="gray.800" fontSize="md" mb={1}>
-                          {matchResult!.project.title}
-                        </Text>
-                        <Text color="gray.700" fontSize="md">
-                          {matchResult!.project.line}
-                        </Text>
-                      </Box>
-                    </Box>
-                  )}
-
-                  {/* Gaps - Where I'd Grow */}
-                  {matchResult!.gaps && matchResult!.gaps.length > 0 && (
-                    <Box>
-                      <Text fontWeight="semibold" color="blue.600" fontSize="lg" mb={3}>
-                        Where I'd Grow
-                      </Text>
-                      <VStack spacing={2} align="start">
-                        {matchResult!.gaps.map((gap, index) => (
-                          <Text key={index} color="gray.700" fontSize="md">
-                            • {gap}
-                          </Text>
-                        ))}
-                      </VStack>
-                    </Box>
-                  )}
-
-                  {/* Closing Line */}
-                  {matchResult!.closing && (
-                    <Box>
-                      <Text fontWeight="semibold" color="blue.600" fontSize="lg" mb={3}>
-                        Next steps
-                      </Text>
-                      <Text fontSize="md" color="gray.700" lineHeight="1.6">
-                        {matchResult!.closing}
-                      </Text>
-                    </Box>
-                  )}
-                </VStack>
-              </Box>
-            ) : (
+        /* Results State */
+        <VStack spacing={7} align="stretch" flex="1" justify="start">
+          {!isMobile ? (
+            <Box 
+              minH="400px"
+              overflow="auto"
+            >
               <VStack spacing={7} align="stretch" py={6}>
                 {/* Quick Take */}
                 <Box>
@@ -408,7 +612,7 @@ export default function RoleMatcherModal({ isOpen, onClose }: RoleMatcherModalPr
                     Summary
                   </Text>
                   <Text fontSize="md" color="gray.700" lineHeight="1.6">
-                    {matchResult!.summary}
+                    <MarkdownText>{matchResult!.summary}</MarkdownText>
                   </Text>
                 </Box>
 
@@ -421,7 +625,7 @@ export default function RoleMatcherModal({ isOpen, onClose }: RoleMatcherModalPr
                     <VStack spacing={2} align="start">
                       {matchResult!.strengths.map((strength, index) => (
                         <Text key={index} color="gray.700" fontSize="md">
-                          • {strength}
+                          • <MarkdownText>{strength}</MarkdownText>
                         </Text>
                       ))}
                     </VStack>
@@ -441,69 +645,178 @@ export default function RoleMatcherModal({ isOpen, onClose }: RoleMatcherModalPr
                       <Text color="gray.700" fontSize="md">
                         {matchResult!.project.line}
                       </Text>
-                      </Box>
                     </Box>
-                  )}
+                  </Box>
+                )}
 
-                  {/* Gaps - Where I'd Grow */}
-                  {matchResult!.gaps && matchResult!.gaps.length > 0 && (
-                    <Box>
-                      <Text fontWeight="semibold" color="blue.600" fontSize="lg" mb={3}>
-                        Where I'd Grow
-                      </Text>
-                      <VStack spacing={2} align="start">
-                        {matchResult!.gaps.map((gap, index) => (
-                          <Text key={index} color="gray.700" fontSize="md">
-                            • {gap}
-                          </Text>
-                        ))}
-                      </VStack>
-                    </Box>
-                  )}
+                {/* Gaps - Where I'd Grow */}
+                {matchResult!.gaps && matchResult!.gaps.length > 0 && (
+                  <Box>
+                    <Text fontWeight="semibold" color="blue.600" fontSize="lg" mb={3}>
+                      Where I'd Grow
+                    </Text>
+                    <VStack spacing={2} align="start">
+                      {matchResult!.gaps.map((gap, index) => (
+                        <Text key={index} color="gray.700" fontSize="md">
+                          • {gap}
+                        </Text>
+                      ))}
+                    </VStack>
+                  </Box>
+                )}
 
-                  {/* Closing Line */}
-                  {matchResult!.closing && (
-                    <Box>
-                      <Text fontWeight="semibold" color="blue.600" fontSize="lg" mb={3}>
-                        Next steps
+                {/* Closing Line */}
+                {matchResult!.closing && (
+                  <Box>
+                    <Text fontWeight="semibold" color="blue.600" fontSize="lg" mb={3}>
+                      Next steps
+                    </Text>
+                    <Text fontSize="md" color="gray.700" lineHeight="1.6">
+                      {matchResult!.closing}
+                    </Text>
+                  </Box>
+                )}
+              </VStack>
+            </Box>
+          ) : (
+            <VStack spacing={7} align="stretch" py={6}>
+              {/* Quick Take */}
+              <Box>
+                <Text fontWeight="semibold" color="blue.600" fontSize="lg" mb={3}>
+                  Quick take
+                </Text>
+                <Text fontSize="md" color="gray.700" lineHeight="1.6">
+                  {matchResult!.quick_take}
+                </Text>
+              </Box>
+
+              {/* Summary */}
+              <Box>
+                <Text fontWeight="semibold" color="blue.600" fontSize="lg" mb={3}>
+                  Summary
+                </Text>
+                <Text fontSize="md" color="gray.700" lineHeight="1.6">
+                  <MarkdownText>{matchResult!.summary}</MarkdownText>
+                </Text>
+              </Box>
+
+              {/* Strengths */}
+              {matchResult!.strengths.length > 0 && (
+                <Box>
+                  <Text fontWeight="semibold" color="blue.600" fontSize="lg" mb={3}>
+                    Matching strengths
+                  </Text>
+                  <VStack spacing={2} align="start">
+                    {matchResult!.strengths.map((strength, index) => (
+                      <Text key={index} color="gray.700" fontSize="md">
+                        • <MarkdownText>{strength}</MarkdownText>
                       </Text>
-                      <Text fontSize="md" color="gray.700" lineHeight="1.6">
-                        {matchResult!.closing}
+                    ))}
+                  </VStack>
+                </Box>
+              )}
+
+              {/* Project */}
+              {matchResult!.project && (
+                <Box>
+                  <Text fontWeight="semibold" color="blue.600" fontSize="lg" mb={3}>
+                    Reference project
+                  </Text>
+                  <Box>
+                    <Text fontWeight="medium" color="gray.800" fontSize="md" mb={1}>
+                      {matchResult!.project.title}
+                    </Text>
+                    <Text color="gray.700" fontSize="md">
+                      {matchResult!.project.line}
+                    </Text>
+                  </Box>
+                </Box>
+              )}
+
+              {/* Gaps - Where I'd Grow */}
+              {matchResult!.gaps && matchResult!.gaps.length > 0 && (
+                <Box>
+                  <Text fontWeight="semibold" color="blue.600" fontSize="lg" mb={3}>
+                    Where I'd Grow
+                  </Text>
+                  <VStack spacing={2} align="start">
+                    {matchResult!.gaps.map((gap, index) => (
+                      <Text key={index} color="gray.700" fontSize="md">
+                        • {gap}
                       </Text>
-                    </Box>
-                  )}
-                </VStack>
+                    ))}
+                  </VStack>
+                </Box>
+              )}
+
+              {/* Closing Line */}
+              {matchResult!.closing && (
+                <Box>
+                  <Text fontWeight="semibold" color="blue.600" fontSize="lg" mb={3}>
+                    Next steps
+                  </Text>
+                  <Text fontSize="md" color="gray.700" lineHeight="1.6">
+                    {matchResult!.closing}
+                  </Text>
+                </Box>
               )}
             </VStack>
           )}
-        </>
-      )
+        </VStack>
+      )}
+    </>
+  )
 
   // Shared footer component
   const renderFooter = () => (
     <VStack spacing={3} w="full">
       {!showResults ? (
-        /* Analyze Button */
-        <Button
-          onClick={handleAnalyze}
-          isLoading={isAnalyzing}
-          loadingText="Analyzing..."
-          size="lg"
-          variant="solid"
-          bg="gray.900"
-          color="white"
-          _hover={{ bg: 'gray.800', transform: 'translateY(-1px)' }}
-          transition="all 0.2s"
-          borderRadius="lg"
-          px={10}
-          py={4}
-          fontSize="lg"
-          fontWeight="medium"
-          w="full"
-          isDisabled={isAnalyzing}
-        >
-          Analyze match
-        </Button>
+        /* File Upload and Analyze Buttons */
+        <HStack spacing={4} w="full">
+          <Button
+            onClick={() => fileInputRef.current?.click()}
+            size="lg"
+            variant="outline"
+            colorScheme="gray"
+            borderColor="gray.300"
+            color="gray.700"
+            _hover={{ 
+              bg: 'gray.50',
+              borderColor: 'gray.400'
+            }}
+            transition="all 0.2s"
+            borderRadius="lg"
+            px={8}
+            py={4}
+            fontSize="lg"
+            fontWeight="medium"
+            flex={1}
+            leftIcon={<FiUpload />}
+            isDisabled={isProcessingFile}
+          >
+            {uploadedFile ? 'Change file' : 'Upload file'}
+          </Button>
+          <Button
+            onClick={handleAnalyze}
+            isLoading={isAnalyzing}
+            loadingText="Analyzing match"
+            size="lg"
+            variant="solid"
+            bg="gray.900"
+            color="white"
+            _hover={{ bg: 'gray.800', transform: 'translateY(-1px)' }}
+            transition="all 0.2s"
+            borderRadius="lg"
+            px={8}
+            py={4}
+            fontSize="lg"
+            fontWeight="medium"
+            flex={1}
+            isDisabled={isAnalyzing}
+          >
+            Analyze match
+          </Button>
+        </HStack>
       ) : (
         /* Action Buttons for Results */
         <HStack spacing={4} w="full">
@@ -574,6 +887,15 @@ export default function RoleMatcherModal({ isOpen, onClose }: RoleMatcherModalPr
 
   return (
     <>
+      {/* Hidden file input */}
+      <Input
+        type="file"
+        accept=".jpg, .jpeg, .png, .pdf, .txt"
+        onChange={handleFileUpload}
+        ref={fileInputRef}
+        display="none"
+      />
+      
       {/* Desktop Modal */}
       {!isMobile && (
         <Modal 
@@ -628,9 +950,17 @@ export default function RoleMatcherModal({ isOpen, onClose }: RoleMatcherModalPr
           />
           <DrawerContent 
             borderTopRadius="xl"
-            transition="all 0.3s ease-out"
+            transition={isOpen ? "all 0.3s ease-out" : "all 0.5s ease-out"}
             transform={isOpen ? "translateY(0)" : "translateY(100%)"}
-            maxH="90vh"
+            opacity={isOpen ? 1 : 0}
+            maxH="85vh"
+            mt="15vh"
+            sx={{
+              '&[data-state="closed"]': {
+                transform: 'translateY(100%)',
+                opacity: 0
+              }
+            }}
           >
             <DrawerHeader borderBottomWidth={showResults ? "1px" : "0px"} borderColor="gray.200">
               {renderHeader()}

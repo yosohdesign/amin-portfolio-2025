@@ -87,7 +87,20 @@ export default function ProjectOverlay({ project, isOpen, onClose }: ProjectOver
   
   useEffect(() => {
     const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768)
+      // More comprehensive mobile detection
+      const mobile = window.innerWidth < 768 || 
+                    'ontouchstart' in window || 
+                    navigator.maxTouchPoints > 0 ||
+                    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+      
+      setIsMobile(mobile)
+      console.log('Mobile detection:', { 
+        width: window.innerWidth, 
+        isMobile: mobile,
+        userAgent: navigator.userAgent,
+        touchPoints: navigator.maxTouchPoints,
+        hasTouch: 'ontouchstart' in window
+      })
     }
     
     checkMobile()
@@ -203,43 +216,22 @@ export default function ProjectOverlay({ project, isOpen, onClose }: ProjectOver
     console.log('Hover states:', { isHovered1, isHovered2, isHovered3 })
   }, [isHovered1, isHovered2, isHovered3])
 
-  // Setup Intersection Observers for content sections
+  // Debug section visibility states
   useEffect(() => {
-    const observers: IntersectionObserver[] = []
-    
-    const createObserver = (ref: React.RefObject<HTMLElement>, setter: (value: boolean) => void) => {
-      if (ref.current) {
-        const observer = new IntersectionObserver(
-          ([entry]) => {
-            if (entry.isIntersecting) {
-              setter(true)
-            }
-          },
-          { threshold: 0.1, rootMargin: '-50px' }
-        )
-        observer.observe(ref.current)
-        observers.push(observer)
-      }
-    }
+    console.log('Section visibility states:', {
+      tlDrInView,
+      backgroundInView,
+      roleInView,
+      toolsInView,
+      challengeInView,
+      processInView,
+      resultsInView,
+      conclusionInView,
+      isMobile
+    })
+  }, [tlDrInView, backgroundInView, roleInView, toolsInView, challengeInView, processInView, resultsInView, conclusionInView, isMobile])
 
-    // Create observers for each section
-    createObserver(tlDrRef, setTlDrInView)
-    createObserver(backgroundRef, setBackgroundInView)
-    createObserver(roleRef, setRoleInView)
-    createObserver(toolsRef, setToolsInView)
-    createObserver(challengeRef, setChallengeInView)
-    createObserver(processRef, setProcessInView)
-    createObserver(resultsRef, setResultsInView)
-    createObserver(conclusionRef, setConclusionInView)
-
-    return () => {
-      observers.forEach(observer => observer.disconnect())
-    }
-  }, [])
-
-
-
-  // Simplified intersection observer for mobile performance
+  // Single intersection observer for all content sections (optimized for mobile)
   useEffect(() => {
     const sectionRefs = [
       { ref: tlDrRef, setter: setTlDrInView },
@@ -252,39 +244,63 @@ export default function ProjectOverlay({ project, isOpen, onClose }: ProjectOver
       { ref: conclusionRef, setter: setConclusionInView }
     ]
 
+    console.log('Setting up intersection observer:', { isMobile, sectionRefs: sectionRefs.map(s => ({ 
+      ref: s.ref.current, 
+      hasRef: !!s.ref.current 
+    })) })
+
     // Create single observer for better mobile performance
     observerRef.current = new IntersectionObserver(
       (entries) => {
         entries.forEach(entry => {
-          const sectionKey = entry.target.getAttribute('data-section')
-          if (sectionKey) {
-            const section = sectionRefs.find(s => s.ref.current === entry.target)
-            if (section && entry.isIntersecting) {
-              section.setter(true)
-            }
+          const section = sectionRefs.find(s => s.ref.current === entry.target)
+          if (section && entry.isIntersecting) {
+            console.log('Section in view:', { 
+              section: section?.ref.current?.textContent?.slice(0, 50), 
+              isIntersecting: entry.isIntersecting,
+              isMobile 
+            })
+            section.setter(true)
           }
         })
       },
       { 
         threshold: 0.1, 
-        rootMargin: '-50px'
+        rootMargin: isMobile ? '-20px' : '-50px' // Smaller margin on mobile for better detection
       }
     )
 
     // Observe all sections
-    sectionRefs.forEach(({ ref, setter }, index) => {
+    sectionRefs.forEach(({ ref }) => {
       if (ref.current) {
-        ref.current.setAttribute('data-section', `section-${index}`)
         observerRef.current?.observe(ref.current)
+        console.log('Observing section:', ref.current.textContent?.slice(0, 50))
       }
     })
+
+    // Fallback: If on mobile, ensure all sections are visible after a short delay
+    if (isMobile) {
+      const fallbackTimer = setTimeout(() => {
+        sectionRefs.forEach(({ setter }) => {
+          setter(true)
+        })
+        console.log('Mobile fallback: All sections set to visible')
+      }, 1000) // 1 second delay
+
+      return () => {
+        clearTimeout(fallbackTimer)
+        if (observerRef.current) {
+          observerRef.current.disconnect()
+        }
+      }
+    }
 
     return () => {
       if (observerRef.current) {
         observerRef.current.disconnect()
       }
     }
-  }, [])
+  }, [isMobile]) // Re-run when mobile state changes
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -618,9 +634,9 @@ export default function ProjectOverlay({ project, isOpen, onClose }: ProjectOver
                 <Box
                       ref={tlDrRef}
                   data-section="tl-dr"
-                  opacity={tlDrInView ? 1 : 0}
-                  transform={tlDrInView ? 'translateY(0)' : 'translateY(20px)'}
-                  transition="opacity 0.6s ease-out, transform 0.6s ease-out"
+                  opacity={tlDrInView || isMobile ? 1 : 0}
+                  transform={tlDrInView || isMobile ? 'translateY(0)' : 'translateY(20px)'}
+                  transition={isMobile ? "none" : "opacity 0.6s ease-out, transform 0.6s ease-out"}
                     >
                       <Box
                         bg="#F8FAFC"
@@ -643,9 +659,9 @@ export default function ProjectOverlay({ project, isOpen, onClose }: ProjectOver
                 <Box
                       ref={backgroundRef}
                   data-section="background"
-                  opacity={backgroundInView ? 1 : 0}
-                  transform={backgroundInView ? 'translateY(0)' : 'translateY(20px)'}
-                  transition="opacity 0.6s ease-out, transform 0.6s ease-out"
+                  opacity={backgroundInView || isMobile ? 1 : 0}
+                  transform={backgroundInView || isMobile ? 'translateY(0)' : 'translateY(20px)'}
+                  transition={isMobile ? "none" : "opacity 0.6s ease-out, transform 0.6s ease-out"}
                     >
                       <VStack align="start" spacing={6}>
                         <Text fontSize={{ base: 'xl', md: '2xl', lg: '3xl' }} fontWeight="medium" color="#3575D9" lineHeight="1.2">
@@ -665,9 +681,9 @@ export default function ProjectOverlay({ project, isOpen, onClose }: ProjectOver
                 <Box
                       ref={roleRef}
                   data-section="role"
-                  opacity={roleInView ? 1 : 0}
-                  transform={roleInView ? 'translateY(0)' : 'translateY(20px)'}
-                  transition="opacity 0.6s ease-out, transform 0.6s ease-out"
+                  opacity={roleInView || isMobile ? 1 : 0}
+                  transform={roleInView || isMobile ? 'translateY(0)' : 'translateY(20px)'}
+                  transition={isMobile ? "none" : "opacity 0.6s ease-out, transform 0.6s ease-out"}
                     >
                       <VStack align="start" spacing={6} pt={8}>
                         <Text fontSize={{ base: 'xl', md: '2xl', lg: '3xl' }} fontWeight="medium" color="#3575D9" lineHeight="1.2">
@@ -694,9 +710,9 @@ export default function ProjectOverlay({ project, isOpen, onClose }: ProjectOver
                 <Box
                       ref={toolsRef}
                   data-section="tools"
-                  opacity={toolsInView ? 1 : 0}
-                  transform={toolsInView ? 'translateY(0)' : 'translateY(20px)'}
-                  transition="opacity 0.6s ease-out, transform 0.6s ease-out"
+                  opacity={toolsInView || isMobile ? 1 : 0}
+                  transform={toolsInView || isMobile ? 'translateY(0)' : 'translateY(20px)'}
+                  transition={isMobile ? "none" : "opacity 0.6s ease-out, transform 0.6s ease-out"}
                     >
                       <VStack align="start" spacing={6} pt={8}>
                         <Text fontSize={{ base: 'xl', md: '2xl', lg: '3xl' }} fontWeight="medium" color="#3575D9" lineHeight="1.2">
@@ -720,9 +736,9 @@ export default function ProjectOverlay({ project, isOpen, onClose }: ProjectOver
                 <Box
                       ref={challengeRef}
                   data-section="challenge"
-                  opacity={challengeInView ? 1 : 0}
-                  transform={challengeInView ? 'translateY(0)' : 'translateY(20px)'}
-                  transition="opacity 0.6s ease-out, transform 0.6s ease-out"
+                  opacity={challengeInView || isMobile ? 1 : 0}
+                  transform={challengeInView || isMobile ? 'translateY(0)' : 'translateY(20px)'}
+                  transition={isMobile ? "none" : "opacity 0.6s ease-out, transform 0.6s ease-out"}
                     >
                       <VStack align="start" spacing={6} pt={8}>
                         <Text fontSize={{ base: 'xl', md: '2xl', lg: '3xl' }} fontWeight="medium" color="#3575D9" lineHeight="1.2">
@@ -747,10 +763,18 @@ export default function ProjectOverlay({ project, isOpen, onClose }: ProjectOver
                 <Box
                       ref={processRef}
                   data-section="process"
-                  opacity={processInView ? 1 : 0}
-                  transform={processInView ? 'translateY(0)' : 'translateY(20px)'}
-                  transition="opacity 0.6s ease-out, transform 0.6s ease-out"
-                      style={{ width: '100%' }}
+                  opacity={processInView || isMobile ? 1 : 0}
+                  transform={processInView || isMobile ? 'translateY(0)' : 'translateY(20px)'}
+                  transition={isMobile ? "none" : "opacity 0.6s ease-out, transform 0.6s ease-out"}
+                      style={{ 
+                        width: '100%',
+                        // Force visibility on mobile as fallback
+                        ...(isMobile && { 
+                          opacity: 1, 
+                          transform: 'translateY(0)',
+                          visibility: 'visible'
+                        })
+                      }}
                     >
                       <VStack align="start" spacing={6} pt={8} w="full">
                         <Text fontSize={{ base: 'xl', md: '2xl', lg: '3xl' }} fontWeight="medium" color="#3575D9" lineHeight="1.2">
@@ -1234,9 +1258,9 @@ export default function ProjectOverlay({ project, isOpen, onClose }: ProjectOver
                 <Box
                       ref={resultsRef}
                   data-section="results"
-                  opacity={resultsInView ? 1 : 0}
-                  transform={resultsInView ? 'translateY(0)' : 'translateY(20px)'}
-                  transition="opacity 0.6s ease-out, transform 0.6s ease-out"
+                  opacity={resultsInView || isMobile ? 1 : 0}
+                  transform={resultsInView || isMobile ? 'translateY(0)' : 'translateY(20px)'}
+                  transition={isMobile ? "none" : "opacity 0.6s ease-out, transform 0.6s ease-out"}
                     >
                       <VStack align="start" spacing={6} pt={8}>
                         <Text fontSize={{ base: 'xl', md: '2xl', lg: '3xl' }} fontWeight="medium" color="#3575D9" lineHeight="1.2">

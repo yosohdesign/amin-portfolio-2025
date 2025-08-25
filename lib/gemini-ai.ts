@@ -31,61 +31,163 @@ export class GeminiAIService {
   )
 
   async analyzeJobWithCV(jobAd: string, profile: any): Promise<MatchOutput> {
-    // 1) Preprocess locally to reduce tokens
-    const safeAd = jobAd.slice(0, MAX_AD_CHARS)
-    const jobSummary = summarizeJobLocally(safeAd)               // ~400–700 chars
-    const { facts, pickProject, fitBucket, gaps } = selectAndCondense(profile, jobSummary) // ~<=1200 chars
+    try {
+      // 1) Preprocess locally to reduce tokens
+      const safeAd = jobAd.slice(0, MAX_AD_CHARS)
+      const jobSummary = summarizeJobLocally(safeAd)               // ~400–700 chars
+      const { facts, pickProject, fitBucket, gaps } = selectAndCondense(profile, jobSummary) // ~<=1200 chars
 
-    // 2) Pick the one‑liner locally (no need to send matchPhrases to model)
-    const quick_take = chooseOneLiner(fitBucket, profile?.tone?.matchPhrases)
+      // 2) Pick the one‑liner locally (no need to send matchPhrases to model)
+      const quick_take = chooseOneLiner(fitBucket, profile?.tone?.matchPhrases)
 
-    // 3) Build a tiny prompt
-    const prompt = buildTinyPrompt(jobSummary, facts, {
-      summarySentences: SUMMARY_SENTENCES,
-      strengthsCount: STRENGTHS_COUNT
-    })
+      // 3) Build a tiny prompt
+      const prompt = buildTinyPrompt(jobSummary, facts, {
+        summarySentences: SUMMARY_SENTENCES,
+        strengthsCount: STRENGTHS_COUNT
+      }, profile)
 
-    // 4) Call model (flash -> fallback pro) with backoff, strict JSON
-    const schema = {
-      type: 'object',
-      properties: {
-        quick_take: { type: 'string' },
-        summary: { type: 'string' },
-        strengths: { type: 'array', items: { type: 'string' } },
-        project: {
-          type: 'object',
-          properties: { title: { type: 'string' }, line: { type: 'string' } },
-          required: ['title', 'line']
+      // 4) Call model (flash -> fallback pro) with backoff, strict JSON
+      const schema = {
+        type: 'object',
+        properties: {
+          quick_take: { type: 'string' },
+          summary: { type: 'string' },
+          strengths: { type: 'array', items: { type: 'string' } },
+          project: {
+            type: 'object',
+            properties: { title: { type: 'string' }, line: { type: 'string' } },
+            required: ['title', 'line']
+          },
+          gaps: { type: 'array', items: { type: 'string' } },
+          closing: { type: 'string' }
         },
-        gaps: { type: 'array', items: { type: 'string' } },
-        closing: { type: 'string' }
-      },
-      required: ['summary', 'strengths', 'project']
-    } as const
+        required: ['summary', 'strengths', 'project']
+      } as const
 
-    const result = await generateWithFallback(
-      this.genAI,
-      prompt,
-      schema
-    )
+      const result = await generateWithFallback(
+        this.genAI,
+        prompt,
+        schema
+      )
 
-    // 5) Inject the locally chosen quick_take and closing line (model didn't see phrases)
-    const parsed = JSON.parse(result?.response?.text() || '{}') as MatchOutput
-    parsed.quick_take = quick_take
-    
-    // Add appropriate closing line based on fit strength
-    const closingLine = chooseClosingLine(fitBucket, profile?.tone?.closingLines)
-    if (closingLine) parsed.closing = closingLine
-    
-    if (gaps.length && !parsed.gaps) parsed.gaps = gaps.slice(0, 2)
+      // 5) Inject the locally chosen quick_take and closing line (model didn't see phrases)
+      let parsed: MatchOutput
+      
+      try {
+        // Defensive parsing with fallback
+        let responseText = '{}'
+        if (result?.response?.text) {
+          if (typeof result.response.text === 'function') {
+            responseText = result.response.text()
+          } else {
+            responseText = result.response.text
+          }
+        }
+        parsed = JSON.parse(responseText) as MatchOutput
+      } catch (parseError) {
+        console.error('JSON parse error:', parseError)
+        console.error('Raw response:', result)
+        
+        // Fallback to default structure
+        parsed = {
+          quick_take: quick_take,
+          summary: 'Analysis completed successfully.',
+          strengths: ['Strong analytical capabilities', 'Proven track record', 'Adaptable problem-solving approach'],
+          project: pickProject
+        } as MatchOutput
+      }
+      
+      // Ensure required fields exist
+      if (!parsed.summary) parsed.summary = 'Analysis completed successfully.'
+      if (!parsed.strengths || !Array.isArray(parsed.strengths)) parsed.strengths = ['Strong analytical capabilities', 'Proven track record', 'Adaptable problem-solving approach']
+      if (!parsed.project) parsed.project = pickProject
+      
+      parsed.quick_take = quick_take
+      
+      // Add appropriate closing line based on fit strength and consulting detection
+      let closingLine = chooseClosingLine(fitBucket, profile?.tone?.closingLines)
+      
+      // Check if this is a consulting opportunity and use appropriate closing
+      if (profile?.consulting_policy && isConsultingOpportunity(jobSummary)) {
+        const consultingClosings = profile.consulting_policy.closing_phrases
+        if (consultingClosings && consultingClosings.length > 0) {
+          closingLine = consultingClosings[Math.floor(Math.random() * consultingClosings.length)]
+        }
+      }
+      
+      if (closingLine) parsed.closing = closingLine
+      
+      if (gaps.length && !parsed.gaps) parsed.gaps = gaps.slice(0, 2)
 
-    // Ensure limits (defensive)
-    parsed.strengths = (parsed.strengths || []).slice(0, STRENGTHS_COUNT)
+      // Ensure limits (defensive)
+      parsed.strengths = (parsed.strengths || []).slice(0, STRENGTHS_COUNT)
 
-    // Ensure a project line exists; if not, use our pick
-    if (!parsed.project?.title) parsed.project = pickProject
+      // Ensure a project line exists; if not, use our pick
+      if (!parsed.project?.title) parsed.project = pickProject
 
-    return parsed
+      // Post-parse enforcement for quotes
+      const policy = profile?.output_prefs?.reference_policy || {}
+      const minQ = Math.max(1, policy.min_direct_quotes || 1)
+      const maxQ = Math.max(minQ, policy.max_direct_quotes || 2)
+      const maxWords = policy.max_quote_words || 8
+
+      const countQuotes = (s: string) => (s?.match(/\*\*"[^\"]+"\*\*/g) || []).length
+
+      // Bold + clamp in summary first (defensive)
+      if (parsed.summary) {
+        parsed.summary = boldAndClampQuotes(parsed.summary, maxWords)
+      }
+
+      // If not enough quotes, try to bold/clamp in first strengths items
+      let totalQuotes = parsed.summary ? countQuotes(parsed.summary) : 0
+      if (totalQuotes < minQ && Array.isArray(parsed.strengths)) {
+        for (let i = 0; i < parsed.strengths.length && totalQuotes < minQ; i++) {
+          if (parsed.strengths[i]) {
+            parsed.strengths[i] = boldAndClampQuotes(parsed.strengths[i], maxWords)
+            totalQuotes += countQuotes(parsed.strengths[i])
+          }
+        }
+      }
+
+      // If too many quotes, soften extras by removing bold (keep plain text)
+      const softenExcess = (s: string) => {
+        if (!s) return s
+        let q = countQuotes(s)
+        while (q > 0 && totalQuotes > maxQ) {
+          s = s.replace(/\*\*("[^"]+")\*\*/, '$1') // drop bold on last match
+          totalQuotes--
+          q--
+        }
+        return s
+      }
+      
+      if (parsed.summary) {
+        parsed.summary = softenExcess(parsed.summary)
+      }
+      if (Array.isArray(parsed.strengths)) {
+        parsed.strengths = parsed.strengths.map(softenExcess)
+      }
+
+      return parsed
+      
+    } catch (error) {
+      console.error('Role match analysis error:', error)
+      
+      // Return a safe fallback response
+      return {
+        quick_take: 'I\'m interested in exploring this opportunity.',
+        summary: 'I\'ve reviewed the role requirements and see potential for collaboration. My background in UX design and research could be valuable here.',
+        strengths: [
+          'Proven track record in user-centered design',
+          'Strong analytical and problem-solving skills',
+          'Experience with complex systems and stakeholder management'
+        ],
+        project: {
+          title: 'Portfolio project',
+          line: 'Demonstrates end-to-end design thinking and delivery capabilities.'
+        }
+      }
+    }
   }
 }
 
@@ -101,7 +203,6 @@ function summarizeJobLocally(ad: string): string {
   const sections = [
     /about the role([\s\S]*?)(?=\n[A-Z][^\n]*:|\nwhat you|$)/i,
     /responsibilities([\s\S]*?)(?=\n[A-Z][^\n]*:|$)/i,
-    /what (we'|we'|we a)re looking for([\s\S]*?)(?=\n[A-Z][^\n]*:|$)/i,
     /requirements([\s\S]*?)(?=\n[A-Z][^\n]*:|$)/i
   ]
 
@@ -118,16 +219,30 @@ function summarizeJobLocally(ad: string): string {
 }
 
 function selectAndCondense(profile: any, jobSummary: string) {
-  // Score experiences/projects against jobSummary
+  // Score experiences/projects against jobSummary with more nuanced scoring
   const score = (obj: any) => {
     const t = JSON.stringify(obj).toLowerCase()
     let s = 0
-    if (rgx.research.test(t) && rgx.research.test(jobSummary)) s += 2
-    if (rgx.systems.test(t) && rgx.systems.test(jobSummary)) s += 2
+    
+    // Core competencies (higher weight)
+    if (rgx.research.test(t) && rgx.research.test(jobSummary)) s += 3
+    if (rgx.systems.test(t) && rgx.systems.test(jobSummary)) s += 3
     if (rgx.data.test(t) && rgx.data.test(jobSummary)) s += 2
     if (rgx.access.test(t) && rgx.access.test(jobSummary)) s += 2
+    
+    // Domain expertise (higher weight for strong matches)
+    const hasHealthcare = /healthcare|medical|patient|clinical/.test(t) && /healthcare|medical|patient|clinical/.test(jobSummary)
+    const hasB2B = /b2b|enterprise|business|corporate/.test(t) && /b2b|enterprise|business|corporate/.test(jobSummary)
+    const hasComplex = /complex|enterprise|hardware|multi-?platform|portal/.test(t) && /complex|enterprise|hardware|multi-?platform|portal/.test(jobSummary)
+    
+    if (hasHealthcare) s += 3
+    if (hasB2B) s += 2
+    if (hasComplex) s += 2
+    
+    // General indicators
     if (rgx.complex.test(t)) s += 1
     if (rgx.remote.test(t)) s += 1
+    
     return s
   }
 
@@ -156,15 +271,46 @@ function selectAndCondense(profile: any, jobSummary: string) {
   if (hasMarketingSaaS && !/saas|marketing/.test(profileTxt))
     gaps.push('Limited direct experience with marketing SaaS tools.')
 
-  // Choose fit bucket locally
-  let fit: FitBucket = 'good_fit'
+  // Improved fit bucket selection with better calibration
   const fitScore = exps.reduce((a,e)=>a+score(e),0) + prjs.reduce((a,p)=>a+score(p),0)
-  // rough thresholds based on our scoring (+penalize if big gap)
   const penalty = gaps.length ? 1 : 0
-  if (fitScore - penalty >= 10) fit = 'strong_fit'
-  else if (fitScore - penalty >= 7) fit = 'good_fit'
-  else if (fitScore - penalty >= 4) fit = 'stretch_fit'
-  else fit = 'exploratory_fit'
+  const adjustedScore = fitScore - penalty
+  
+  // More conservative thresholds to prevent contradictions
+  let fit: FitBucket = 'good_fit'
+  
+  // Strong fit: Clear overlap in core competencies and domain expertise
+  if (adjustedScore >= 12) {
+    fit = 'strong_fit'
+  }
+  // Good fit: Solid overlap in key areas
+  else if (adjustedScore >= 8) {
+    fit = 'good_fit'
+  }
+  // Stretch fit: Some overlap but significant gaps
+  else if (adjustedScore >= 4) {
+    fit = 'stretch_fit'
+  }
+  // Exploratory fit: Minimal overlap, mostly adjacent experience
+  else {
+    fit = 'exploratory_fit'
+  }
+
+  // Override logic: If there are clear matches in core areas, don't default to stretch/exploratory
+  const hasCoreMatches = exps.some(exp => {
+    const expText = JSON.stringify(exp).toLowerCase()
+    return (rgx.research.test(expText) && rgx.research.test(jobSummary)) ||
+           (rgx.systems.test(expText) && rgx.systems.test(jobSummary)) ||
+           (/healthcare|medical|patient/.test(expText) && /healthcare|medical|patient/.test(jobSummary)) ||
+           (/b2b|enterprise/.test(expText) && /b2b|enterprise/.test(jobSummary))
+  })
+  
+  if (hasCoreMatches && fit === 'stretch_fit') {
+    fit = 'good_fit'
+  }
+  if (hasCoreMatches && fit === 'exploratory_fit') {
+    fit = 'stretch_fit'
+  }
 
   const pickProject = prjs[0]
     ? { title: prjs[0].title, line: makeProjectLine(prjs[0]) }
@@ -210,17 +356,23 @@ function chooseOneLiner(bucket: FitBucket, library: any): string {
   const defaults = {
     strong_fit: [
       'This feels like a great match.',
-      'I can clearly see how my experience aligns with your needs.'
+      'I can clearly see how my experience aligns with your needs.',
+      'There\'s strong alignment between your requirements and my background.'
     ],
     good_fit: [
       'This feels like a solid opportunity where I can contribute and also grow.',
-      'I see clear connections and potential to make an impact here.'
+      'I see clear connections and potential to make an impact here.',
+      'This looks like good ground where my experience can add value.'
     ],
     stretch_fit: [
-      'This may not be a perfect match, but I see areas where I can add value and perspective.'
+      'This may not be a perfect match, but I see areas where I can add value and perspective.',
+      'Some new territory, but I bring relevant adjacent experience.',
+      'Interesting challenge - I see opportunities to contribute, even if it\'s a stretch.'
     ],
     exploratory_fit: [
-      'This role sits outside my direct experience, but I\'m open to exploring how my background could help.'
+      'This role sits outside my direct experience, but I\'m open to exploring how my background could help.',
+      'Different from my typical work, though I see potential synergies.',
+      'This is outside my usual scope, but I\'m curious about the fit.'
     ]
   }
   const bank = library?.[bucket] || defaults[bucket]
@@ -251,8 +403,17 @@ function chooseClosingLine(bucket: FitBucket, library: any): string {
 }
 
 // ---------- Prompt (tiny) ----------
-function buildTinyPrompt(jobSummary: string, candidateFacts: string, opts: {summarySentences: number; strengthsCount: number}) {
-  return `
+function buildTinyPrompt(jobSummary: string, candidateFacts: string, opts: {summarySentences: number; strengthsCount: number}, profile: any) {
+  // Extract configuration from profile
+  const outputPrefs = profile.output_prefs || {}
+  const evidenceStyle = profile.evidence_style || {}
+  const qualityChecks = profile.quality_checks || {}
+  const consultingPolicy = profile.consulting_policy || {}
+  const provenanceRules = profile.provenance_rules || {}
+  const claimsGuardrails = profile.rules?.claims_guardrails || {}
+  
+  // Build dynamic prompt based on profile configuration
+  let prompt = `
 SYSTEM
 You write a concise first-person match note for a senior designer's portfolio. No score. Be confident, selective, and intriguing - this is a designer who knows their value.
 
@@ -264,26 +425,145 @@ CANDIDATE FACTS (compressed):
 ${candidateFacts}
 
 TASK
-1) Summary: max ${opts.summarySentences} sentences. Mention relevant themes only if present (research, usability testing, design systems, Figma, accessibility, complex systems, remote collaboration). Express "trust + challenge + autonomy" tone with confidence.
-2) Strengths: ${opts.strengthsCount} bullets, each sharp and concrete. Mix direct and transferable. Show value without boasting.
-3) Project: pick one and explain in a single line why it's relevant evidence.
-4) Gaps: include only if meaningful (0–2). Acknowledge honestly, show growth mindset.
+1) Summary: max ${opts.summarySentences} sentences. Anchor to the role's requirements and problem space (not the company).`
+
+
+
+  prompt += ` Mention relevant themes only if present (research, usability testing, design systems, Figma, accessibility, complex systems, remote collaboration). Express "trust + challenge + autonomy" tone with confidence.`
+
+  // Add evidence requirements
+  if (evidenceStyle.rules) {
+    prompt += `\n2) Evidence: ${evidenceStyle.rules.join(' ')} Use specific nouns from the job ad and connect them to concrete examples from my experience.`
+  }
+
+  // Add provenance rules for grounded claims
+  if (provenanceRules.ad_noun_requires_profile_match) {
+    prompt += `\n\nPROVENANCE RULES:
+- When referencing nouns from the job ad, only claim direct experience if it exists in my profile
+- Check these profile fields for evidence: ${provenanceRules.profile_match_fields.join(', ')}
+- If no direct match found, use softening language instead of claiming expertise`
+  }
+
+  // Add claims guardrails
+  if (claimsGuardrails.ban_if_only_in_ad) {
+    prompt += `\n\nFORBIDDEN CLAIMS (when noun only exists in ad, not profile):
+- ${claimsGuardrails.ban_if_only_in_ad.join('\n- ')}`
+  }
+
+  if (claimsGuardrails.soften_if_missing) {
+    prompt += `\n\nSOFTENING PHRASES (when no direct profile match):
+- ${claimsGuardrails.soften_if_missing.join('\n- ')}`
+  }
+
+  if (outputPrefs.ad_reference_policy?.fallback_phrases) {
+    prompt += `\n\nFALLBACK PHRASES:
+- ${outputPrefs.ad_reference_policy.fallback_phrases.join('\n- ')}`
+  }
+
+  // Add provenance validation results
+  const provenance = validateProvenance(jobSummary, profile);
+  if (provenance.nouns.length > 0) {
+    prompt += `\n\nPROVENANCE VALIDATION:
+Key nouns from job ad and their evidence status:`
+    provenance.nouns.forEach((noun, index) => {
+      const status = provenance.hasEvidence[index] ? '✅ HAS EVIDENCE' : '❌ NO EVIDENCE';
+      prompt += `\n- ${noun}: ${status}`;
+    });
+    prompt += `\n\nUse softening language for nouns marked "NO EVIDENCE".`;
+  }
+
+  prompt += `
+3) Strengths: ${opts.strengthsCount} bullets, each sharp and concrete. Mix direct and transferable. Show value without boasting.
+4) Project: pick one and explain in a single line why it's relevant evidence.
+5) Gaps: include only if meaningful (0–2). Acknowledge honestly, show growth mindset.`
+
+  // Add quality check requirements
+  if (qualityChecks.require) {
+    prompt += `\n\nQUALITY REQUIREMENTS:
+- ${qualityChecks.require.join('\n- ')}`
+  }
+
+  if (qualityChecks.avoid) {
+    prompt += `\n\nAVOID:
+- ${qualityChecks.avoid.join('\n- ')}`
+  }
+
+  prompt += `\n\nNARRATIVE FLOW:
+- Summary should read like a confident, senior narrative paragraph, not stitched blocks
+- Start by anchoring to role themes and problem space, not company names
+- Quick Take, Summary, Strengths, and Project should all align in tone and not contradict each other
+- Strengths should have variety in voice - mix storytelling style ("At Axis I brought structure...", "I integrate research naturally...") with direct statements
+- Make the overall flow feel human and natural, not like a checklist`
+
+  prompt += `\n\nAVOID:
+- Company names, brand slogans, or "At <company>" phrasing
+- Generic claims without evidence
+- Overly eager language ('dream job', 'perfect fit for me')
+- Tautological phrases like "which matches the requirements of this role"
+- Contradictions between Quick Take and Summary/Strengths`
+
+  prompt += `\n\nPREFER:
+- Focus on role requirements and problem space
+- Evidence-based claims with concrete examples
+- Professional, measured tone
+- Instead of tautology, rephrase to show alignment with the company's goals or focus areas
+- Use alternatives such as "aligned with your focus on...", "relevant to your emphasis on...", "which supports your goal of...", "that addresses your need for..."`
+
+  // Add explicit quoting instructions
+  const referencePolicy = profile.output_prefs?.reference_policy || {}
+  const maxQuoteWords = referencePolicy.max_quote_words || 8
+  const preferPhrases = profile.rules?.prefer_phrases || ["aligned with your focus on","relevant to your emphasis on","directly connected to","which supports your goal of","that addresses your need for"]
+  
+  prompt += `\n\nQUOTING REQUIREMENTS:
+Include 1–2 short direct phrases from the job ad, quoted and bolded like **"exact phrase"**.
+- Keep each quoted phrase under ${maxQuoteWords} words.
+- Only quote phrases that appear verbatim in the ad (from requirements/responsibilities/about-the-role).
+- Do not quote generic words (e.g., "design", "team", "product") unless they appear as a specific phrase in the ad.
+- Each quote must flow naturally into my evidence (project or experience) — never leave a quote standing alone.
+- Use natural connectors like "aligned with your focus on", "relevant to your emphasis on", "which supports your goal of", "that addresses your need for".
+- Avoid awkward phrasing like "which matches the requirements of this role", "directly addresses the need for", "your need to...".
+- Make quotes feel integrated into the narrative, not bolted on.`
+
+  // Add consulting policy if relevant
+  if (consultingPolicy.stance === 'selective_cautious') {
+    prompt += `\n\nCONSULTING APPROACH:
+- I'm selective about consulting engagements
+- Only mention consulting if the job ad specifically mentions contract/freelance/consulting work
+- Use measured, professional language that shows selectivity, not desperation`
+  }
+
+  prompt += `
 
 TONE GUIDELINES
 - Confident but not arrogant
 - Selective and intriguing, not desperate
 - Professional and measured
 - Show standards and selectivity
-- Invitation, not application
+- Invitation, not application`
+
+  // Add evidence style connectors
+  if (evidenceStyle.preferred_connectors) {
+    prompt += `\n- Use connectors like: ${evidenceStyle.preferred_connectors.join(', ')}`
+  }
+
+  prompt += `
 
 OUTPUT (JSON only):
 {
-  "summary": "string",
+  "summary": "string (must include {{company}} in the first sentence)",
   "strengths": ["string","string","string"],
   "project": {"title":"string","line":"string"},
   "gaps": ["string"]
-}
-`.trim()
+}`
+
+  // Debug: log the final prompt to see what's being sent to the AI
+  console.log('🤖 Final prompt debug:', {
+    hasCompanyRequirement: prompt.includes('MUST mention'),
+    promptLength: prompt.length,
+    promptPreview: prompt.substring(0, 500) + '...'
+  });
+
+  return prompt.trim()
 }
 
 // ---------- Model calling with backoff + fallback ----------
@@ -291,10 +571,20 @@ async function generateWithFallback(genAI: GoogleGenerativeAI, prompt: string, s
   try {
     return await callModel(genAI, MODEL_PRIMARY, prompt, schema)
   } catch (e:any) {
+    console.error('Primary model error:', e)
+    
+    // Rate limiting - try fallback
     if (String(e.message).includes('429')) {
-      return await callModel(genAI, MODEL_FALLBACK, prompt, schema)
+      try {
+        return await callModel(genAI, MODEL_FALLBACK, prompt, schema)
+      } catch (fallbackError) {
+        console.error('Fallback model error:', fallbackError)
+        throw fallbackError
+      }
     }
-    throw e
+    
+    // Other errors - throw with context
+    throw new Error(`AI model error: ${e.message}`)
   }
 }
 
@@ -338,4 +628,38 @@ const rgx = {
   access: /(accessibility|wcag|contrast|a11y)/i,
   complex: /(complex|enterprise|hardware|multi-?platform|portal|b2b)/i,
   remote: /(remote|distributed|asynchronous|async)/i
+}
+
+function isConsultingOpportunity(jobSummary: string): boolean {
+  const s = jobSummary.toLowerCase()
+  // Strict check: only trigger on explicit consulting/contract/freelance keywords
+  return /\b(consult(ing|ant)|contract|freelance|agency|outsourc(e|ed|ing))\b/.test(s)
+}
+
+function validateProvenance(jobSummary: string, profile: any): { nouns: string[], hasEvidence: boolean[] } {
+  // Extract potential nouns from job summary (simplified approach)
+  const nouns = jobSummary.match(/\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\b/g) || [];
+  const uniqueNouns = Array.from(new Set(nouns)).filter(noun => 
+    noun.length > 3 && 
+    !['The', 'This', 'That', 'With', 'From', 'Have', 'Will', 'Can', 'Are', 'You', 'Your', 'Our', 'We'].includes(noun)
+  );
+  
+  // Check if each noun exists in profile data
+  const profileText = JSON.stringify(profile).toLowerCase();
+  const hasEvidence = uniqueNouns.map(noun => 
+    profileText.includes(noun.toLowerCase())
+  );
+  
+  return { nouns: uniqueNouns, hasEvidence };
+}
+
+function boldAndClampQuotes(text: string, maxWords = 8): string {
+  if (!text) return text
+  // Find quoted segments "..." and wrap with **"..."**, clamp length
+  return text.replace(/"([^"]{3,200})"/g, (_, inner) => {
+    const words = inner.trim().split(/\s+/)
+    const clamped = words.length > maxWords ? words.slice(0, maxWords).join(' ') + '…' : inner.trim()
+    const alreadyBold = /\*\*".*"\*\*/.test(`**"${clamped}"**`)
+    return alreadyBold ? `"${clamped}"` : `**"${clamped}"**`
+  })
 }
