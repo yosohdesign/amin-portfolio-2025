@@ -3,10 +3,12 @@
 /* Remove default smooth scrolling to avoid conflicts with our custom implementation */
 html {
   scroll-padding-top: 20px; /* Keep padding for fixed headers */
+  /* Ensure html doesn't interfere with sticky positioning */
+  overflow-x: visible;
 }
 
-/* Prevent horizontal overflow */
-html, body {
+/* Prevent horizontal overflow - only on body to avoid sticky positioning issues */
+body {
   overflow-x: hidden;
   max-width: 100%;
 }
