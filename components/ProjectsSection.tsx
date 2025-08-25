@@ -73,7 +73,7 @@ export default function ProjectsSection() {
   }, [])
 
   return (
-    <Box py={20} pt={48} bg="white" id="projects" ref={sectionRef}>
+    <Box py={20} pt={{ base: 24, lg: 48 }} bg="white" id="projects" ref={sectionRef}>
       <Container maxW="container.2xl" px={{ base: 4, lg: 8 }}>
         <VStack spacing={12} align="stretch">
           {/* Section Header */}
@@ -93,7 +93,12 @@ export default function ProjectsSection() {
           </VStack>
 
           {/* Featured Project Card */}
-          <Box>
+          <Box
+            opacity={isVisible ? 1 : 0}
+            transform={isVisible ? 'translateY(0)' : 'translateY(30px)'}
+            transition="opacity 0.6s ease-out, transform 0.6s ease-out"
+            transitionDelay="0.2s"
+          >
             <ProjectCard
               ref={(el) => { projectRefs.current[0] = el }}
               {...projects[0]}
@@ -105,7 +110,13 @@ export default function ProjectsSection() {
           {/* Additional Case Study Cards */}
           <VStack spacing={12} align="stretch">
             {projects.slice(1).map((project, index) => (
-              <Box key={index + 1}>
+              <Box 
+                key={index + 1}
+                opacity={isVisible ? 1 : 0}
+                transform={isVisible ? 'translateY(0)' : 'translateY(30px)'}
+                transition="opacity 0.6s ease-out, transform 0.6s ease-out"
+                transitionDelay={`${0.4 + (index * 0.2)}s`}
+              >
                 <ProjectCard
                   ref={(el) => { projectRefs.current[index + 1] = el }}
                   {...project}

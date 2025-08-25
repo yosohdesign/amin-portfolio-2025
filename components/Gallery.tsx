@@ -169,7 +169,7 @@ export default function Gallery({ images, isVisible = false }: GalleryProps) {
   return (
     <Box
       ref={galleryRef}
-      h="100vh"
+      h={{ base: "500px", lg: "100vh" }}
       position="relative"
       overflow="hidden"
       display="grid"

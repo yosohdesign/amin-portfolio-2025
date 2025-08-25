@@ -71,12 +71,12 @@ export default function HeroSection() {
       </Box>
 
       <Box 
-        h="100vh" 
+        h={{ base: "auto", lg: "100vh" }}
         bg="white" 
         display="flex" 
-        alignItems="center"
+        alignItems={{ base: "start", lg: "center" }}
         position="relative"
-        overflow="hidden"
+        overflow={{ base: "visible", lg: "hidden" }}
         style={{
           transform: `scale(${scale}) translateY(${translateY}px)`,
           opacity: opacity,
@@ -86,12 +86,12 @@ export default function HeroSection() {
       >
 
 
-        <Container maxW="container.2xl" px={{ base: 4, lg: 8 }} h="100vh">
+        <Container maxW="container.2xl" px={{ base: 4, lg: 8 }} h={{ base: "auto", lg: "100vh" }}>
           <Grid
             templateColumns={{ base: '1fr', lg: '1fr 1fr' }}
             gap={12}
-            alignItems="center"
-            h="100vh"
+            alignItems={{ base: "start", lg: "center" }}
+            h={{ base: "auto", lg: "100vh" }}
           >
             {/* Left Column - Text Content */}
             <GridItem>
