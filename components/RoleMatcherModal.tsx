@@ -32,6 +32,7 @@ import {
   Input,
   IconButton,
   Tooltip,
+  Badge,
 } from '@chakra-ui/react'
 import { useState, useRef } from 'react'
 import { MatchOutput } from '@/lib/gemini-ai'
@@ -874,9 +875,23 @@ export default function RoleMatcherModal({ isOpen, onClose }: RoleMatcherModalPr
   // Shared header component
   const renderHeader = () => (
     <>
-      <Heading size={isMobile ? "md" : "lg"} color="gray.800" fontWeight="normal">
-        Role match analysis
-      </Heading>
+      <HStack spacing={3} align="center">
+        <Heading size={isMobile ? "md" : "lg"} color="gray.800" fontWeight="normal">
+          Role match analysis
+        </Heading>
+        <Badge
+          fontSize={isMobile ? "xs" : "sm"}
+          px={2}
+          py={1}
+          borderRadius="full"
+          borderWidth="1.5px"
+          color="blue.600"
+          borderColor="blue.600"
+          bg="transparent"
+        >
+          Beta
+        </Badge>
+      </HStack>
       {!showResults && (
         <Text fontSize={isMobile ? "sm" : "md"} color="gray.600" fontWeight="normal" mt={2}>
           Paste your job requirements below and I'll analyze how well my profile matches your needs.
