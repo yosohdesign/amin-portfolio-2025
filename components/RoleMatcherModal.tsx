@@ -880,9 +880,9 @@ export default function RoleMatcherModal({ isOpen, onClose }: RoleMatcherModalPr
           Role match analysis
         </Heading>
         <Badge
-          fontSize={isMobile ? "xs" : "sm"}
-          px={2}
-          py={1}
+          fontSize={isMobile ? "2xs" : "xs"}
+          px={1.5}
+          py={isMobile ? 0 : 0.5}
           borderRadius="full"
           borderWidth="1.5px"
           color="blue.600"
