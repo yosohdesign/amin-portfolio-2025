@@ -19,6 +19,12 @@ export interface MatchOutput {
   closing?: string
 }
 
+export interface ValidationMessage {
+  validation_message: string
+}
+
+export type AnalysisResult = MatchOutput | ValidationMessage
+
 export class GeminiAIService {
   private static instance: GeminiAIService
   static getInstance(): GeminiAIService {
@@ -30,8 +36,49 @@ export class GeminiAIService {
     process.env.NEXT_PUBLIC_GOOGLE_GEMINI_API_KEY || ''
   )
 
-  async analyzeJobWithCV(jobAd: string, profile: any): Promise<MatchOutput> {
+  private validateJobInput(jobAd: string): ValidationMessage | null {
+    // LOOSENED GATE: Treat input as HIGH-QUALITY if it meets ANY TWO of these three:
+    // - At least 200 characters (reduced from 220)
+    // - At least 2 line breaks
+    // - Contains any section header keyword from expanded list
+    
+    const charCount = jobAd.trim().length
+    const newlineCount = (jobAd.match(/\n/g) || []).length
+    
+    const cueWords = [
+      "requirements", "responsibilities", "about the role", "what you'll do", 
+      "what you will do", "about you", "qualifications", "we're looking for", 
+      "must have", "nice to have"
+    ]
+    
+    // Case-insensitive regex that allows variations
+    const cueRegex = new RegExp(cueWords.join('|'), 'i')
+    const hasCueWords = cueRegex.test(jobAd)
+    
+    // Count how many criteria are met
+    let criteriaMet = 0
+    if (charCount >= 200) criteriaMet++
+    if (newlineCount >= 2) criteriaMet++
+    if (hasCueWords) criteriaMet++
+    
+    // Pass if ANY TWO criteria are met
+    if (criteriaMet >= 2) {
+      return null
+    }
+    
+    return {
+      validation_message: "Please paste the full job description (8–12 requirement bullets or a detailed role section). Short keywords or vague text aren't enough for meaningful analysis."
+    }
+  }
+
+  async analyzeJobWithCV(jobAd: string, profile: any): Promise<AnalysisResult> {
     try {
+      // 0) Validate input quality first
+      const validationError = this.validateJobInput(jobAd)
+      if (validationError) {
+        return validationError
+      }
+
       // 1) Preprocess locally to reduce tokens
       const safeAd = jobAd.slice(0, MAX_AD_CHARS)
       const jobSummary = summarizeJobLocally(safeAd)               // ~400–700 chars
@@ -40,13 +87,43 @@ export class GeminiAIService {
       // 2) Pick the one‑liner locally (no need to send matchPhrases to model)
       const quick_take = chooseOneLiner(fitBucket, profile?.tone?.matchPhrases)
 
-      // 3) Build a tiny prompt
+      // 3) Detect location restrictions
+      const locationInfo = detectLocationRestrictions(jobAd)
+
+      // 4) Detect AI/tech claims
+      const aiInfo = detectAITechClaims(jobAd)
+
+      // Debug logging
+      console.log('🔍 Analysis Debug:', {
+        fitBucket,
+        locationInfo,
+        aiInfo,
+        hasAdjacentExperience: /healthcare|medical|patient|saas|complex|enterprise|b2b|portal|hardware|software/.test(JSON.stringify(profile.experiences || []).toLowerCase()),
+        hasHealthcareOverlap: /healthcare|medical|patient|health|wellness/.test(jobAd.toLowerCase()) && /healthcare|medical|patient/.test(JSON.stringify(profile.experiences || []).toLowerCase()),
+        jobAdPreview: jobAd.substring(0, 200) + '...',
+        locationDetectionDebug: {
+          inHouseStockholm: /in.?house\s*team\s*in\s*stockholm/i.test(jobAd.toLowerCase()),
+          stockholmBased: /stockholm\s*based|based\s*in\s*stockholm/i.test(jobAd.toLowerCase()),
+          swedenBased: /sweden\s*based|based\s*in\s*sweden/i.test(jobAd.toLowerCase()),
+          workplaceNordic: /workplace\s*:\s*[^.]*(stockholm|oslo|helsinki|norway|sweden|finland|nordic|nordics)/i.test(jobAd.toLowerCase()),
+          inOfficeStockholm: /in.?office|4\s*days\s*a\s*week|stockholm\s*4\s*days/i.test(jobAd.toLowerCase()),
+          sustainabilityFocus: /clean.?energy|sustainability|environmental|co2|emissions|heating|energy/i.test(jobAd.toLowerCase()),
+          webDesignFocus: /web|website|lead.?generation|conversion|digital|online/i.test(jobAd.toLowerCase())
+        },
+        projectSelectionDebug: {
+          selectedProject: pickProject,
+          isUXRole: /ux|user.?experience|design|interface|interaction|usability/.test(jobSummary.toLowerCase()),
+          projectScores: profile.projects?.map((p: any) => ({ title: p.title, score: 'calculated later' })) || []
+        }
+      })
+
+      // 5) Build a tiny prompt
       const prompt = buildTinyPrompt(jobSummary, facts, {
         summarySentences: SUMMARY_SENTENCES,
         strengthsCount: STRENGTHS_COUNT
-      }, profile)
+      }, profile, locationInfo || undefined, aiInfo || undefined)
 
-      // 4) Call model (flash -> fallback pro) with backoff, strict JSON
+      // 5) Call model (flash -> fallback pro) with backoff, strict JSON
       const schema = {
         type: 'object',
         properties: {
@@ -102,10 +179,38 @@ export class GeminiAIService {
       if (!parsed.strengths || !Array.isArray(parsed.strengths)) parsed.strengths = ['Strong analytical capabilities', 'Proven track record', 'Adaptable problem-solving approach']
       if (!parsed.project) parsed.project = pickProject
       
+      // Apply Quick Take calibration rules
       parsed.quick_take = quick_take
+      
+      // Apply location handling to summary if restrictions detected
+      if (locationInfo && locationInfo.hasRestriction && locationInfo.summaryNote) {
+        // Add location acknowledgment at the end of summary
+        if (parsed.summary && !parsed.summary.includes(locationInfo.summaryNote)) {
+          parsed.summary = parsed.summary.trim() + ' ' + locationInfo.summaryNote
+        }
+      }
+      
+      // Apply AI/tech claims handling if needed
+      if (aiInfo && aiInfo.hasAIClaims) {
+        // Ensure the AI response doesn't overclaim AI experience
+        // The prompt should handle this, but we can add additional validation here
+        console.log('AI claims detected in job ad:', aiInfo.aiKeywords)
+      }
       
       // Add appropriate closing line based on fit strength and consulting detection
       let closingLine = chooseClosingLine(fitBucket, profile?.tone?.closingLines)
+      
+      // Apply closing line strength rules based on fit bucket
+      const closingRules = profile.rules?.closing_line_strength
+      if (closingRules) {
+        if (fitBucket === 'strong_fit' && closingRules.strong_fit) {
+          closingLine = closingRules.strong_fit[Math.floor(Math.random() * closingRules.strong_fit.length)]
+        } else if (fitBucket === 'good_fit' && closingRules.good_fit) {
+          closingLine = closingRules.good_fit[Math.floor(Math.random() * closingRules.good_fit.length)]
+        } else if (fitBucket === 'stretch_fit' && closingRules.stretch_fit) {
+          closingLine = closingRules.stretch_fit[Math.floor(Math.random() * closingRules.stretch_fit.length)]
+        }
+      }
       
       // Check if this is a consulting opportunity and use appropriate closing
       if (profile?.consulting_policy && isConsultingOpportunity(jobSummary)) {
@@ -195,6 +300,143 @@ export default GeminiAIService.getInstance()
 
 // ---------- Local preprocessing (token savers) ----------
 
+function detectLocationRestrictions(jobAd: string): {
+  hasRestriction: boolean
+  restrictionType: string | null
+  qualifier: string | null
+  gapsNote: string | null
+  summaryNote: string | null
+} {
+  const lower = jobAd.toLowerCase()
+  
+  // Check for explicit location restrictions
+  if (/europe\s*only|eu\s*only|european\s*only/i.test(lower)) {
+    return {
+      hasRestriction: true,
+      restrictionType: 'europe_only',
+      qualifier: "My preference is for fully remote roles, though I'm open to exceptional opportunities regardless of location.",
+      gapsNote: "Location flexibility may be a consideration, though I'm curious about potential remote arrangements or exceptional opportunities.",
+      summaryNote: "I noticed this role emphasizes EU-only work. My focus is remote-first, though I'd be open to a conversation if flexibility exists."
+    }
+  }
+  
+  if (/us\s*only|united\s*states\s*only|america\s*only|usa\s*only/i.test(lower)) {
+    return {
+      hasRestriction: true,
+      restrictionType: 'us_only',
+      qualifier: "While I'm based in Europe, I'm open to exploring opportunities that align with my remote work preferences.",
+      gapsNote: "Geographic location may present practical considerations, though I'm interested in understanding the role's flexibility.",
+      summaryNote: "I noticed this role emphasizes US-only work. My focus is remote-first, though I'd be open to a conversation if flexibility exists."
+    }
+  }
+  
+  if (/stockholm\s*only|sweden\s*only|lund\s*only/i.test(lower)) {
+    return {
+      hasRestriction: true,
+      restrictionType: 'stockholm_only',
+      qualifier: "I'm curious about the role's flexibility regarding remote work arrangements.",
+      gapsNote: "Location requirements may need discussion, though I see potential for collaboration if there's flexibility.",
+      summaryNote: "I noticed this role emphasizes Stockholm-only work. My focus is remote-first, though I'd be open to a conversation if flexibility exists."
+    }
+  }
+  
+  // Check for broader Stockholm/Sweden location patterns
+  if (/in.?house\s*team\s*in\s*stockholm|stockholm\s*based|sweden\s*based|based\s*in\s*stockholm|based\s*in\s*sweden/i.test(lower)) {
+    return {
+      hasRestriction: true,
+      restrictionType: 'stockholm_based',
+      qualifier: "I'm curious about the role's flexibility regarding remote work arrangements.",
+      gapsNote: "Location requirements may need discussion, though I see potential for collaboration if there's flexibility.",
+      summaryNote: "I noticed this role emphasizes in-house work in Stockholm. My focus is remote-first, though I'd be open to a conversation if flexibility exists."
+    }
+  }
+  
+  // Check for workplace location patterns
+  if (/workplace\s*:\s*[^.]*(stockholm|oslo|helsinki|norway|sweden|finland|nordic|nordics)/i.test(lower) || 
+      /workplace\s*:\s*[^.]*(stockholm|oslo|helsinki)/i.test(lower)) {
+    return {
+      hasRestriction: true,
+      restrictionType: 'nordic_workplace',
+      qualifier: "I'm curious about the role's flexibility regarding remote work arrangements.",
+      gapsNote: "Location requirements may need discussion, though I see potential for collaboration if there's flexibility.",
+      summaryNote: "I noticed this role emphasizes workplace locations in Oslo, Helsinki, or Stockholm. My focus is remote-first, though I'd be open to a conversation if flexibility exists."
+    }
+  }
+  
+  // Check for travel/relocation requirements
+  if (/occasional\s*travel|travel\s*required|relocation|based\s*in|workplace/i.test(lower)) {
+    return {
+      hasRestriction: true,
+      restrictionType: 'travel_required',
+      qualifier: "I'm curious about the role's flexibility regarding remote work arrangements.",
+      gapsNote: "Travel requirements may need discussion, though I see potential for collaboration if there's flexibility.",
+      summaryNote: "I noticed this role emphasizes workplace locations with occasional travel. My focus is remote-first, though I'd be open to a conversation if flexibility exists."
+    }
+  }
+  
+  // Check for in-office requirements
+  if (/in.?office|4\s*days\s*a\s*week|5\s*days\s*a\s*week|hybrid|on.?site|stockholm\s*4\s*days/i.test(lower)) {
+    return {
+      hasRestriction: true,
+      restrictionType: 'in_office_required',
+      qualifier: "I'm curious about the role's flexibility regarding remote work arrangements.",
+      gapsNote: "In-office requirements may need discussion, though I see potential for collaboration if there's flexibility.",
+      summaryNote: "I noticed this role emphasizes in-office work in Stockholm. My focus is remote-first, though I'd be open to a conversation if flexibility exists."
+    }
+  }
+  
+  if (/location\s*restricted|must\s*be\s*in|relocation\s*required|on.?site\s*only|no\s*remote/i.test(lower)) {
+    return {
+      hasRestriction: true,
+      restrictionType: 'location_restricted',
+      qualifier: "I'm curious about the role's flexibility regarding remote work arrangements.",
+      gapsNote: "Location requirements may need discussion, though I see potential for collaboration if there's flexibility.",
+      summaryNote: "I noticed this role emphasizes in-house work. My focus is remote-first, though I'd be open to a conversation if flexibility exists."
+    }
+  }
+  
+  if (/remote\s*not\s*available|no\s*remote\s*work|on.?site\s*required|must\s*work\s*from\s*office/i.test(lower)) {
+    return {
+      hasRestriction: true,
+      restrictionType: 'remote_excluded',
+      qualifier: "Since my priority is full-remote collaboration, this might be a practical limitation unless there's flexibility.",
+      gapsNote: "The on-site requirement may not align with my remote work preferences, though I'm open to discussing potential arrangements.",
+      summaryNote: "I noticed this role emphasizes on-site work. My focus is remote-first, though I'd be open to a conversation if flexibility exists."
+    }
+  }
+  
+  return {
+    hasRestriction: false,
+    restrictionType: null,
+    qualifier: null,
+    gapsNote: null,
+    summaryNote: null
+  }
+}
+
+function detectAITechClaims(jobAd: string): {
+  hasAIClaims: boolean
+  aiKeywords: string[]
+} {
+  const lower = jobAd.toLowerCase()
+  const aiKeywords = [
+    'ai-first', 'ai platform', 'artificial intelligence', 'machine learning', 'ml',
+    'ai-driven', 'ai-powered', 'ai tools', 'ai systems', 'ai applications',
+    'ai-first company', 'ai-driven solutions', 'generative ai', 'cutting-edge technologies',
+    'ai-driven solutions', 'ai-driven platform', 'ai-driven features'
+  ]
+  
+  const foundKeywords = aiKeywords.filter(keyword => lower.includes(keyword))
+  
+  // Also check for broader AI patterns
+  const hasAIPatterns = /ai.?first|ai.?driven|ai.?powered|generative.?ai|artificial.?intelligence/i.test(jobAd)
+  
+  return {
+    hasAIClaims: foundKeywords.length > 0 || hasAIPatterns,
+    aiKeywords: foundKeywords.length > 0 ? foundKeywords : (hasAIPatterns ? ['AI-related technologies'] : [])
+  }
+}
+
 function summarizeJobLocally(ad: string): string {
   // Very cheap heuristic extraction: keep the essence
   const lower = ad.toLowerCase()
@@ -238,6 +480,23 @@ function selectAndCondense(profile: any, jobSummary: string) {
     if (hasHealthcare) s += 3
     if (hasB2B) s += 2
     if (hasComplex) s += 2
+    
+    // UX Design specific scoring (higher weight for UX roles)
+    const isUXRole = /ux|user.?experience|design|interface|interaction|usability/.test(jobSummary.toLowerCase())
+    if (isUXRole) {
+      // Boost UX research and usability projects
+      if (/user.?research|usability.?testing|workshop|facilitation|insight/.test(t)) s += 4
+      // Boost design system and interface projects
+      if (/design.?system|interface|interaction|prototype|figma/.test(t)) s += 3
+      // Boost user journey and experience projects
+      if (/user.?journey|experience|flow|workflow/.test(t)) s += 3
+      // Boost web design and lead generation projects
+      if (/web|website|digital|online|conversion|lead/.test(t)) s += 3
+      // Boost sustainability and behavior change projects
+      if (/sustainability|environmental|clean|energy|health|wellness|behavior|habit/.test(t)) s += 3
+      // Reduce score for pure data/analytics projects in UX roles
+      if (/data|analytics|reporting|trading|energy/.test(t) && !/user|design|interface|web|sustainability/.test(t)) s -= 2
+    }
     
     // General indicators
     if (rgx.complex.test(t)) s += 1
@@ -305,11 +564,119 @@ function selectAndCondense(profile: any, jobSummary: string) {
            (/b2b|enterprise/.test(expText) && /b2b|enterprise/.test(jobSummary))
   })
   
+  // Enhanced override logic based on new Quick Take calibration rules
   if (hasCoreMatches && fit === 'stretch_fit') {
     fit = 'good_fit'
   }
   if (hasCoreMatches && fit === 'exploratory_fit') {
     fit = 'stretch_fit'
+  }
+  
+  // Additional override: If candidate has adjacent experience (healthcare, SaaS-like, complex systems), 
+  // upgrade to at least stretch_fit (never exploratory_fit)
+  const hasAdjacentExperience = exps.some(exp => {
+    const expText = JSON.stringify(exp).toLowerCase()
+    return /healthcare|medical|patient|saas|complex|enterprise|b2b|portal|hardware|software/.test(expText)
+  })
+  
+  if (hasAdjacentExperience && fit === 'exploratory_fit') {
+    fit = 'stretch_fit'
+  }
+  
+  // If there's strong domain overlap (healthcare, B2B, enterprise), upgrade further
+  const hasStrongDomainOverlap = exps.some(exp => {
+    const expText = JSON.stringify(exp).toLowerCase()
+    const jobText = jobSummary.toLowerCase()
+    return (/healthcare|medical|patient/.test(expText) && /healthcare|medical|patient|health|wellness|lifesum|healthy|habits/.test(jobText)) ||
+           (/b2b|enterprise|portal/.test(expText) && /b2b|enterprise|portal|complex|systems/.test(jobText))
+  })
+  
+  if (hasStrongDomainOverlap && fit === 'stretch_fit') {
+    fit = 'good_fit'
+  }
+  
+  // Additional upgrade: If there's very strong healthcare overlap (like health tech company), upgrade to good_fit
+  const hasVeryStrongHealthcareOverlap = exps.some(exp => {
+    const expText = JSON.stringify(exp).toLowerCase()
+    const jobText = jobSummary.toLowerCase()
+    return (/healthcare|medical|patient|fluid|tracker|health/.test(expText) && 
+            /health|wellness|healthy|habits|lifesum|health.?tech|consumer.?health/.test(jobText))
+  })
+  
+  if (hasVeryStrongHealthcareOverlap && fit === 'stretch_fit') {
+    fit = 'good_fit'
+  }
+  
+  // Additional upgrade: If there's strong product design overlap (mobile/web, user journeys, interfaces)
+  const hasStrongProductDesignOverlap = exps.some(exp => {
+    const expText = JSON.stringify(exp).toLowerCase()
+    const jobText = jobSummary.toLowerCase()
+    return (/mobile|web|user.?journey|interface|interaction|prototype|design.?system/.test(expText) && 
+            /mobile|web|user.?journey|interface|interaction|prototype|design.?system/.test(jobText))
+  })
+  
+  if (hasStrongProductDesignOverlap && fit === 'stretch_fit') {
+    fit = 'good_fit'
+  }
+  
+  // Additional upgrade: If there's strong UX research and usability overlap
+  const hasStrongUXResearchOverlap = exps.some(exp => {
+    const expText = JSON.stringify(exp).toLowerCase()
+    const jobText = jobSummary.toLowerCase()
+    return (/user.?research|usability.?testing|insight|workshop|facilitation/.test(expText) && 
+            /user.?insight|usability.?testing|workshop|facilitation|insight.?gathering/.test(jobText))
+  })
+  
+  if (hasStrongUXResearchOverlap && fit === 'stretch_fit') {
+    fit = 'good_fit'
+  }
+  
+  // Additional upgrade: If there's strong complex systems and enterprise overlap
+  const hasStrongComplexSystemsOverlap = exps.some(exp => {
+    const expText = JSON.stringify(exp).toLowerCase()
+    const jobText = jobSummary.toLowerCase()
+    return (/complex.?systems|enterprise|hardware|software|multi.?platform|portal/.test(expText) && 
+            /complex|enterprise|multinational|cross.?functional|supplier|platform/.test(jobText))
+  })
+  
+  if (hasStrongComplexSystemsOverlap && fit === 'stretch_fit') {
+    fit = 'good_fit'
+  }
+  
+  // Additional upgrade: If there's Nordic/Scandinavian experience overlap
+  const hasNordicExperienceOverlap = exps.some(exp => {
+    const expText = JSON.stringify(exp).toLowerCase()
+    const jobText = jobSummary.toLowerCase()
+    return (/sweden|norway|finland|nordic|scandinavian|europe/.test(expText) && 
+            /norway|sweden|finland|nordic|nordics|scandinavian/.test(jobText))
+  })
+  
+  if (hasNordicExperienceOverlap && fit === 'stretch_fit') {
+    fit = 'good_fit'
+  }
+  
+  // Additional upgrade: If there's sustainability/clean energy overlap
+  const hasSustainabilityOverlap = exps.some(exp => {
+    const expText = JSON.stringify(exp).toLowerCase()
+    const jobText = jobSummary.toLowerCase()
+    return (/sustainability|environmental|clean|energy|health|wellness|behavior/.test(expText) && 
+            /clean.?energy|sustainability|environmental|co2|emissions|heating|energy/.test(jobText))
+  })
+  
+  if (hasSustainabilityOverlap && fit === 'stretch_fit') {
+    fit = 'good_fit'
+  }
+  
+  // Additional upgrade: If there's web design and lead generation overlap
+  const hasWebDesignOverlap = exps.some(exp => {
+    const expText = JSON.stringify(exp).toLowerCase()
+    const jobText = jobSummary.toLowerCase()
+    return (/web|website|digital|online|ecommerce|conversion|lead/.test(expText) && 
+            /web|website|lead.?generation|conversion|digital|online/.test(jobText))
+  })
+  
+  if (hasWebDesignOverlap && fit === 'stretch_fit') {
+    fit = 'good_fit'
   }
 
   const pickProject = prjs[0]
@@ -403,7 +770,7 @@ function chooseClosingLine(bucket: FitBucket, library: any): string {
 }
 
 // ---------- Prompt (tiny) ----------
-function buildTinyPrompt(jobSummary: string, candidateFacts: string, opts: {summarySentences: number; strengthsCount: number}, profile: any) {
+function buildTinyPrompt(jobSummary: string, candidateFacts: string, opts: {summarySentences: number; strengthsCount: number}, profile: any, locationInfo?: {hasRestriction: boolean; restrictionType: string | null; qualifier: string | null; gapsNote: string | null; summaryNote: string | null}, aiInfo?: {hasAIClaims: boolean; aiKeywords: string[]}) {
   // Extract configuration from profile
   const outputPrefs = profile.output_prefs || {}
   const evidenceStyle = profile.evidence_style || {}
@@ -412,6 +779,21 @@ function buildTinyPrompt(jobSummary: string, candidateFacts: string, opts: {summ
   const provenanceRules = profile.provenance_rules || {}
   const claimsGuardrails = profile.rules?.claims_guardrails || {}
   
+  // Set default locationInfo if not provided
+  const locInfo = locationInfo || {
+    hasRestriction: false,
+    restrictionType: null,
+    qualifier: null,
+    gapsNote: null,
+    summaryNote: null
+  }
+  
+  // Set default aiInfo if not provided
+  const ai = aiInfo || {
+    hasAIClaims: false,
+    aiKeywords: []
+  }
+
   // Build dynamic prompt based on profile configuration
   let prompt = `
 SYSTEM
@@ -476,6 +858,89 @@ Key nouns from job ad and their evidence status:`
 3) Strengths: ${opts.strengthsCount} bullets, each sharp and concrete. Mix direct and transferable. Show value without boasting.
 4) Project: pick one and explain in a single line why it's relevant evidence.
 5) Gaps: include only if meaningful (0–2). Acknowledge honestly, show growth mindset.`
+
+  // Add location handling instructions if restrictions detected
+  if (locInfo.hasRestriction) {
+    prompt += `\n\nLOCATION HANDLING (CRITICAL):
+- The job ad has location restrictions: ${locInfo.restrictionType}
+- You MUST add this sentence at the END of the Summary: "${locInfo.summaryNote}"
+- Use this qualifier in the summary: "${locInfo.qualifier}"
+- If including gaps, add this note: "${locInfo.gapsNote}"
+- Maintain professional, curious tone - never sound desperate or apologetic
+- Always leave the door open for conversation about flexibility
+- Bridge-building approach: show interest while acknowledging practical considerations
+- This is NOT optional - you must include the location acknowledgment`
+  }
+
+  // Add AI/tech claims handling
+  if (ai.hasAIClaims) {
+    prompt += `\n\nAI/TECH CLAIMS HANDLING (CRITICAL):
+- Job ad mentions AI/tech: ${ai.aiKeywords.join(', ')}
+- CRITICAL: Only mention AI-first or AI platforms if explicitly present in candidate profile
+- If profile doesn't have AI experience, use soft phrasing: "I'm familiar with AI-driven tools and adjacent patterns, and I'd apply my research-first approach here"
+- NEVER hallucinate direct AI platform experience
+- Focus on research-first approach and adjacent patterns
+- This is NOT optional - you must follow these rules strictly`
+  }
+
+  // Add Quick Take calibration rules
+  const quickTakeRules = profile.rules?.quick_take_calibration
+  if (quickTakeRules) {
+    prompt += `\n\nQUICK TAKE CALIBRATION (CRITICAL):
+- Do NOT classify as "exploratory_fit" if candidate has adjacent experience (healthcare, SaaS-like, complex systems)
+- In such cases, upgrade Quick Take to at least "stretch_fit" or "good_fit"
+- Avoid downplaying synergies when overlap exists
+- Consider healthcare, B2B, enterprise, and complex systems as adjacent experience
+- NEVER use language like "interesting departure from my path" or "unconventional fit" when there's clear domain overlap
+- This is NOT optional - you must follow these rules strictly`
+  }
+
+  // Add Summary intro pattern rules
+  const summaryIntroRules = profile.rules?.summary_intro_patterns
+  if (summaryIntroRules) {
+    prompt += `\n\nSUMMARY INTRO PATTERNS:
+- NEVER start with generic "I'm a product designer…" or "I have a proven ability…"
+- Start with confident, specific phrasing anchored in candidate identity
+- Use these intro templates (randomize slightly for variety):
+  * "I design with clarity and structure, bringing research and usability into complex systems."
+  * "I thrive on simplifying healthcare and B2B challenges into flows people trust."
+  * "I bring structure and research to complex systems, turning messy problems into clear solutions."
+  * "I design for trust in healthcare and enterprise, where clarity saves time and prevents errors."
+- Must always sound personal and senior, not generic`
+  }
+
+  // Add closing line strength rules
+  const closingRules = profile.rules?.closing_line_strength
+  if (closingRules) {
+    prompt += `\n\nCLOSING LINE STRENGTH:
+- If fitBucket = strong_fit → Closing must be confident:
+  * "This looks promising — I'd be glad to explore further."
+  * "If this resonates, I'm open to a short conversation."
+- If fitBucket = good_fit → balanced:
+  * "Worth exploring together — let me know if you'd like to connect."
+- If stretch_fit → exploratory but not weak:
+  * "If you see potential here, I'm open to discussing how my background might fit."
+- AVOID overly weak closings like "Curious to learn more if you see potential"`
+  }
+
+  // Add summary guardrails
+  const summaryGuardrails = profile.rules?.summary_guardrails
+  if (summaryGuardrails) {
+    prompt += `\n\nSUMMARY GUARDRAILS:
+- NO company name insertions in Summary ("At X, I…")
+- Avoid tautologies like "which matches the requirements of this role"
+- Always anchor to role themes and problem space, not brand slogans
+- Focus on problem space, requirements, and role themes`
+  }
+
+  // Add communication softening rules
+  const communicationRules = profile.rules?.communication_softening
+  if (communicationRules) {
+    prompt += `\n\nCOMMUNICATION SOFTENING:
+- Always leave space for reinterpretation: use soft language if unsure (e.g., "may overlap with my background" instead of hard claims)
+- If requirements could be misinterpreted, soften the tone: "I may not match every detail, but my strengths in X and Y are highly relevant"
+- Never produce rigid rejections ("This won't work") — instead use cautious curiosity ("This might be a stretch, though I see potential overlaps worth exploring")`
+  }
 
   // Add quality check requirements
   if (qualityChecks.require) {

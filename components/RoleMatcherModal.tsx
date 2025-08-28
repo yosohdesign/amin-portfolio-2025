@@ -23,9 +23,6 @@ import {
   HStack,
   Box,
   Heading,
-  Alert,
-  AlertIcon,
-  AlertDescription,
   Skeleton,
   Icon,
   useBreakpointValue,
@@ -35,7 +32,7 @@ import {
   Badge,
 } from '@chakra-ui/react'
 import { useState, useRef } from 'react'
-import { MatchOutput } from '@/lib/gemini-ai'
+import { MatchOutput, AnalysisResult } from '@/lib/gemini-ai'
 import profileData from '@/profile.json'
 import { FiUpload, FiX } from 'react-icons/fi'
 import Tesseract from 'tesseract.js'
@@ -67,6 +64,55 @@ const MarkdownText = ({ children }: { children: string }) => {
   )
 }
 
+// Custom validation message component
+const ValidationMessage = ({ message, type = 'warning' }: { message: string; type?: 'warning' | 'error' | 'info' }) => {
+  const getColors = () => {
+    switch (type) {
+      case 'error':
+        return {
+          bg: 'red.50',
+          border: 'red.200',
+          icon: 'red.500',
+          text: 'red.800',
+          iconBg: 'red.100'
+        }
+      case 'info':
+        return {
+          bg: 'blue.50',
+          border: 'blue.200',
+          icon: 'blue.500',
+          text: 'blue.800',
+          iconBg: 'blue.100'
+        }
+      default: // warning
+        return {
+          bg: 'amber.50',
+          border: 'amber.200',
+          icon: 'amber.500',
+          text: 'amber.800',
+          iconBg: 'amber.100'
+        }
+    }
+  }
+  
+  const colors = getColors()
+  
+  return (
+    <Box
+      bg={colors.bg}
+      borderRadius="lg"
+      p={4}
+      position="relative"
+    >
+      <Box>
+        <Text fontSize="md" color={colors.text} lineHeight="1.6" fontWeight="500">
+          {message}
+        </Text>
+      </Box>
+    </Box>
+  )
+}
+
 interface RoleMatcherModalProps {
   isOpen: boolean
   onClose: () => void
@@ -75,7 +121,7 @@ interface RoleMatcherModalProps {
 export default function RoleMatcherModal({ isOpen, onClose }: RoleMatcherModalProps) {
   const [jobRequirements, setJobRequirements] = useState('')
   const [isAnalyzing, setIsAnalyzing] = useState(false)
-  const [matchResult, setMatchResult] = useState<MatchOutput | null>(null)
+  const [matchResult, setMatchResult] = useState<AnalysisResult | null>(null)
   const [showResults, setShowResults] = useState(false)
   const [validationMessage, setValidationMessage] = useState('')
   const [uploadedFile, setUploadedFile] = useState<File | null>(null)
@@ -190,6 +236,36 @@ export default function RoleMatcherModal({ isOpen, onClose }: RoleMatcherModalPr
       return
     }
 
+    // Frontend validation guard
+    const isLowQuality = (txt: string) => {
+      const minChars = 200 // reduced from 220
+      const cueWords = [
+        "requirements", "responsibilities", "about the role", "what you'll do", 
+        "what you will do", "about you", "qualifications", "we're looking for", 
+        "must have", "nice to have"
+      ]
+      
+      // Case-insensitive regex that allows variations
+      const cueRegex = new RegExp(cueWords.join('|'), 'i')
+      const hasCueWords = cueRegex.test(txt)
+      
+      // Count how many criteria are met
+      let criteriaMet = 0
+      if (txt.trim().length >= minChars) criteriaMet++
+      if ((txt.match(/\n/g)?.length ?? 0) >= 2) criteriaMet++
+      if (hasCueWords) criteriaMet++
+      
+      // Pass if ANY TWO criteria are met
+      return criteriaMet < 2
+    }
+
+    if (isLowQuality(jobRequirements)) {
+      setValidationMessage(
+        'Please paste the full job description (8–12 requirement bullets or a detailed role section). Short keywords or vague text aren\'t enough for meaningful analysis.'
+      )
+      return
+    }
+
     setValidationMessage('')
     setIsAnalyzing(true)
     setShowResults(false)
@@ -198,8 +274,17 @@ export default function RoleMatcherModal({ isOpen, onClose }: RoleMatcherModalPr
       // Import the Gemini service dynamically to avoid build issues
       const { default: geminiService } = await import('@/lib/gemini-ai')
       const result = await geminiService.analyzeJobWithCV(jobRequirements, profileData)
-      setMatchResult(result)
-      setShowResults(true)
+      
+      // Check if this is a validation message or successful analysis
+      if ('validation_message' in result) {
+        // This is a validation error - show it and don't proceed to results
+        setValidationMessage(result.validation_message)
+        setShowResults(false)
+      } else {
+        // This is a successful analysis - show results
+        setMatchResult(result)
+        setShowResults(true)
+      }
     } catch (error) {
       console.error('Analysis error:', error)
       
@@ -209,6 +294,11 @@ export default function RoleMatcherModal({ isOpen, onClose }: RoleMatcherModalPr
     } finally {
       setIsAnalyzing(false)
     }
+  }
+
+  // Type guard to check if result is a successful analysis
+  const isSuccessfulAnalysis = (result: AnalysisResult): result is MatchOutput => {
+    return 'quick_take' in result && 'summary' in result && 'strengths' in result
   }
 
   const handleClose = () => {
@@ -398,16 +488,10 @@ export default function RoleMatcherModal({ isOpen, onClose }: RoleMatcherModalPr
                       {/* Validation Message */}
                       {validationMessage && (
                         <VStack spacing={3} align="stretch">
-                          <Alert 
-                            status={getErrorStatus(validationMessage)} 
-                            borderRadius="lg"
-                            variant="left-accent"
-                          >
-                            <AlertIcon />
-                            <AlertDescription>
-                              {validationMessage}
-                            </AlertDescription>
-                          </Alert>
+                          <ValidationMessage 
+                            message={validationMessage}
+                            type={getErrorStatus(validationMessage)}
+                          />
                           
                           {/* Action button for critical errors */}
                           {(validationMessage.includes('Daily AI analysis limit reached') || 
@@ -552,16 +636,10 @@ export default function RoleMatcherModal({ isOpen, onClose }: RoleMatcherModalPr
                     {/* Validation Message */}
                     {validationMessage && (
                       <VStack spacing={3} align="stretch">
-                        <Alert 
-                          status={getErrorStatus(validationMessage)} 
-                          borderRadius="lg"
-                          variant="left-accent"
-                        >
-                          <AlertIcon />
-                          <AlertDescription>
-                            {validationMessage}
-                          </AlertDescription>
-                        </Alert>
+                        <ValidationMessage 
+                          message={validationMessage}
+                          type={getErrorStatus(validationMessage)}
+                        />
                         
                         {/* Action button for critical errors */}
                         {(validationMessage.includes('Daily AI analysis limit reached') || 
@@ -591,176 +669,194 @@ export default function RoleMatcherModal({ isOpen, onClose }: RoleMatcherModalPr
       ) : (
         /* Results State */
         <VStack spacing={7} align="stretch" flex="1" justify="start">
-          {!isMobile ? (
-            <Box 
-              minH="400px"
-              overflow="auto"
-            >
-              <VStack spacing={7} align="stretch" py={6}>
-                {/* Quick Take */}
-                <Box>
-                  <Text fontWeight="semibold" color="blue.600" fontSize={isMobile ? "md" : "lg"} mb={3}>
-                    Quick take
-                  </Text>
-                  <Text fontSize="md" color="gray.700" lineHeight="1.6">
-                    {matchResult!.quick_take}
-                  </Text>
-                </Box>
-
-                {/* Summary */}
-                <Box>
-                  <Text fontWeight="semibold" color="blue.600" fontSize={isMobile ? "md" : "lg"} mb={3}>
-                    Summary
-                  </Text>
-                  <Text fontSize="md" color="gray.700" lineHeight="1.6">
-                    <MarkdownText>{matchResult!.summary}</MarkdownText>
-                  </Text>
-                </Box>
-
-                {/* Strengths */}
-                {matchResult!.strengths.length > 0 && (
-                  <Box>
-                    <Text fontWeight="semibold" color="blue.600" fontSize={isMobile ? "md" : "lg"} mb={3}>
-                      Matching strengths
-                    </Text>
-                    <VStack spacing={2} align="start">
-                      {matchResult!.strengths.map((strength, index) => (
-                        <Text key={index} color="gray.700" fontSize="md">
-                          • <MarkdownText>{strength}</MarkdownText>
-                        </Text>
-                      ))}
-                    </VStack>
-                  </Box>
-                )}
-
-                {/* Project */}
-                {matchResult!.project && (
-                  <Box>
-                    <Text fontWeight="semibold" color="blue.600" fontSize={isMobile ? "md" : "lg"} mb={3}>
-                      Reference project
-                    </Text>
+          {/* Check for validation message first */}
+          {matchResult && 'validation_message' in matchResult ? (
+            <VStack spacing={6} justify="center" align="center" flex="1" py={6}>
+              <ValidationMessage 
+                message={matchResult.validation_message}
+                type="warning"
+              />
+            </VStack>
+          ) : matchResult && isSuccessfulAnalysis(matchResult) ? (
+            <>
+              {!isMobile ? (
+                <Box 
+                  minH="400px"
+                  overflow="auto"
+                >
+                  <VStack spacing={7} align="stretch" py={6}>
+                    {/* Quick Take */}
                     <Box>
-                      <Text fontWeight="medium" color="gray.800" fontSize="md" mb={1}>
-                        {matchResult!.project.title}
+                      <Text fontWeight="semibold" color="blue.600" fontSize={isMobile ? "md" : "lg"} mb={3}>
+                        Quick take
                       </Text>
-                      <Text color="gray.700" fontSize="md">
-                        <MarkdownText>{matchResult!.project.line}</MarkdownText>
+                      <Text fontSize="md" color="gray.700" lineHeight="1.6">
+                        {(matchResult as MatchOutput).quick_take}
                       </Text>
                     </Box>
-                  </Box>
-                )}
 
-                {/* Gaps - Where I'd Grow */}
-                {matchResult!.gaps && matchResult!.gaps.length > 0 && (
-                  <Box>
-                    <Text fontWeight="semibold" color="blue.600" fontSize={isMobile ? "md" : "lg"} mb={3}>
-                      Where I'd Grow
-                    </Text>
-                    <VStack spacing={2} align="start">
-                      {matchResult!.gaps.map((gap, index) => (
-                        <Text key={index} color="gray.700" fontSize="md">
-                          • {gap}
+                    {/* Summary */}
+                    <Box>
+                      <Text fontWeight="semibold" color="blue.600" fontSize={isMobile ? "md" : "lg"} mb={3}>
+                        Summary
+                      </Text>
+                      <Text fontSize="md" color="gray.700" lineHeight="1.6">
+                        <MarkdownText>{(matchResult as MatchOutput).summary}</MarkdownText>
+                      </Text>
+                    </Box>
+
+                    {/* Strengths */}
+                    {(matchResult as MatchOutput).strengths.length > 0 && (
+                      <Box>
+                        <Text fontWeight="semibold" color="blue.600" fontSize={isMobile ? "md" : "lg"} mb={3}>
+                          Matching strengths
                         </Text>
-                      ))}
-                    </VStack>
-                  </Box>
-                )}
+                        <VStack spacing={2} align="start">
+                          {(matchResult as MatchOutput).strengths.map((strength: string, index: number) => (
+                            <Text key={index} color="gray.700" fontSize="md">
+                              • <MarkdownText>{strength}</MarkdownText>
+                            </Text>
+                          ))}
+                        </VStack>
+                      </Box>
+                    )}
 
-                {/* Closing Line */}
-                {matchResult!.closing && (
+                    {/* Project */}
+                    {(matchResult as MatchOutput).project && (
+                      <Box>
+                        <Text fontWeight="semibold" color="blue.600" fontSize={isMobile ? "md" : "lg"} mb={3}>
+                          Reference project
+                        </Text>
+                        <Box>
+                          <Text fontWeight="medium" color="gray.800" fontSize="md" mb={1}>
+                            {(matchResult as MatchOutput).project.title}
+                          </Text>
+                          <Text color="gray.700" fontSize="md">
+                            <MarkdownText>{(matchResult as MatchOutput).project.line}</MarkdownText>
+                          </Text>
+                        </Box>
+                      </Box>
+                    )}
+
+                    {/* Gaps - Where I'd Grow */}
+                    {(matchResult as MatchOutput).gaps && (matchResult as MatchOutput).gaps!.length > 0 && (
+                      <Box>
+                        <Text fontWeight="semibold" color="blue.600" fontSize={isMobile ? "md" : "lg"} mb={3}>
+                          Where I'd Grow
+                        </Text>
+                        <VStack spacing={2} align="start">
+                          {(matchResult as MatchOutput).gaps!.map((gap: string, index: number) => (
+                            <Text key={index} color="gray.700" fontSize="md">
+                              • {gap}
+                            </Text>
+                          ))}
+                        </VStack>
+                      </Box>
+                    )}
+
+                    {/* Closing Line */}
+                    {(matchResult as MatchOutput).closing && (
+                      <Box>
+                        <Text fontWeight="semibold" color="blue.600" fontSize={isMobile ? "md" : "lg"} mb={3}>
+                          Next steps
+                        </Text>
+                        <Text fontSize="md" color="gray.700" lineHeight="1.6">
+                          {(matchResult as MatchOutput).closing}
+                        </Text>
+                      </Box>
+                    )}
+                  </VStack>
+                </Box>
+              ) : (
+                <VStack spacing={7} align="stretch" py={6}>
+                  {/* Quick Take */}
                   <Box>
                     <Text fontWeight="semibold" color="blue.600" fontSize={isMobile ? "md" : "lg"} mb={3}>
-                      Next steps
+                      Quick take
                     </Text>
                     <Text fontSize="md" color="gray.700" lineHeight="1.6">
-                      {matchResult!.closing}
+                      {(matchResult as MatchOutput).quick_take}
                     </Text>
                   </Box>
-                )}
-              </VStack>
-            </Box>
-          ) : (
-            <VStack spacing={7} align="stretch" py={6}>
-              {/* Quick Take */}
-              <Box>
-                <Text fontWeight="semibold" color="blue.600" fontSize={isMobile ? "md" : "lg"} mb={3}>
-                  Quick take
-                </Text>
-                <Text fontSize="md" color="gray.700" lineHeight="1.6">
-                  {matchResult!.quick_take}
-                </Text>
-              </Box>
 
-              {/* Summary */}
-              <Box>
-                <Text fontWeight="semibold" color="blue.600" fontSize={isMobile ? "md" : "lg"} mb={3}>
-                  Summary
-                </Text>
-                <Text fontSize="md" color="gray.700" lineHeight="1.6">
-                  <MarkdownText>{matchResult!.summary}</MarkdownText>
-                </Text>
-              </Box>
-
-              {/* Strengths */}
-              {matchResult!.strengths.length > 0 && (
-                <Box>
-                                  <Text fontWeight="semibold" color="blue.600" fontSize={isMobile ? "md" : "lg"} mb={3}>
-                  Matching strengths
-                </Text>
-                  <VStack spacing={2} align="start">
-                    {matchResult!.strengths.map((strength, index) => (
-                      <Text key={index} color="gray.700" fontSize="md">
-                        • <MarkdownText>{strength}</MarkdownText>
-                      </Text>
-                    ))}
-                  </VStack>
-                </Box>
-              )}
-
-              {/* Project */}
-              {matchResult!.project && (
-                <Box>
-                                  <Text fontWeight="semibold" color="blue.600" fontSize={isMobile ? "md" : "lg"} mb={3}>
-                  Reference project
-                </Text>
+                  {/* Summary */}
                   <Box>
-                    <Text fontWeight="medium" color="gray.800" fontSize="md" mb={1}>
-                      {matchResult!.project.title}
+                    <Text fontWeight="semibold" color="blue.600" fontSize={isMobile ? "md" : "lg"} mb={3}>
+                      Summary
                     </Text>
-                    <Text color="gray.700" fontSize="md">
-                      <MarkdownText>{matchResult!.project.line}</MarkdownText>
+                    <Text fontSize="md" color="gray.700" lineHeight="1.6">
+                      <MarkdownText>{(matchResult as MatchOutput).summary}</MarkdownText>
                     </Text>
                   </Box>
-                </Box>
-              )}
 
-              {/* Gaps - Where I'd Grow */}
-              {matchResult!.gaps && matchResult!.gaps.length > 0 && (
-                <Box>
-                                  <Text fontWeight="semibold" color="blue.600" fontSize={isMobile ? "md" : "lg"} mb={3}>
-                  Where I'd Grow
-                </Text>
-                  <VStack spacing={2} align="start">
-                    {matchResult!.gaps.map((gap, index) => (
-                      <Text key={index} color="gray.700" fontSize="md">
-                        • {gap}
+                  {/* Strengths */}
+                  {(matchResult as MatchOutput).strengths.length > 0 && (
+                    <Box>
+                      <Text fontWeight="semibold" color="blue.600" fontSize={isMobile ? "md" : "lg"} mb={3}>
+                        Matching strengths
                       </Text>
-                    ))}
-                  </VStack>
-                </Box>
-              )}
+                      <VStack spacing={2} align="start">
+                        {(matchResult as MatchOutput).strengths.map((strength: string, index: number) => (
+                          <Text key={index} color="gray.700" fontSize="md">
+                            • <MarkdownText>{strength}</MarkdownText>
+                          </Text>
+                        ))}
+                      </VStack>
+                    </Box>
+                  )}
 
-              {/* Closing Line */}
-              {matchResult!.closing && (
-                <Box>
-                                  <Text fontWeight="semibold" color="blue.600" fontSize={isMobile ? "md" : "lg"} mb={3}>
-                  Next steps
-                </Text>
-                  <Text fontSize="md" color="gray.700" lineHeight="1.6">
-                    {matchResult!.closing}
-                  </Text>
-                </Box>
+                  {/* Project */}
+                  {(matchResult as MatchOutput).project && (
+                    <Box>
+                      <Text fontWeight="semibold" color="blue.600" fontSize={isMobile ? "md" : "lg"} mb={3}>
+                        Reference project
+                      </Text>
+                      <Box>
+                        <Text fontWeight="medium" color="gray.800" fontSize="md" mb={1}>
+                          {(matchResult as MatchOutput).project.title}
+                        </Text>
+                        <Text color="gray.700" fontSize="md">
+                          <MarkdownText>{(matchResult as MatchOutput).project.line}</MarkdownText>
+                        </Text>
+                      </Box>
+                    </Box>
+                  )}
+
+                  {/* Gaps - Where I'd Grow */}
+                  {(matchResult as MatchOutput).gaps && (matchResult as MatchOutput).gaps!.length > 0 && (
+                    <Box>
+                      <Text fontWeight="semibold" color="blue.600" fontSize={isMobile ? "md" : "lg"} mb={3}>
+                        Where I'd Grow
+                      </Text>
+                      <VStack spacing={2} align="start">
+                        {(matchResult as MatchOutput).gaps!.map((gap: string, index: number) => (
+                          <Text key={index} color="gray.700" fontSize="md">
+                            • {gap}
+                          </Text>
+                        ))}
+                      </VStack>
+                    </Box>
+                  )}
+
+                  {/* Closing Line */}
+                  {(matchResult as MatchOutput).closing && (
+                    <Box>
+                      <Text fontWeight="semibold" color="blue.600" fontSize={isMobile ? "md" : "lg"} mb={3}>
+                        Next steps
+                      </Text>
+                      <Text fontSize="md" color="gray.700" lineHeight="1.6">
+                        {(matchResult as MatchOutput).closing}
+                      </Text>
+                    </Box>
+                  )}
+                </VStack>
               )}
+            </>
+          ) : (
+            <VStack spacing={6} justify="center" align="center" flex="1">
+              <Text color="gray.500" fontSize="md" textAlign="center">
+                No analysis results to display.
+              </Text>
             </VStack>
           )}
         </VStack>

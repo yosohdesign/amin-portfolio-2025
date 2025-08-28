@@ -385,6 +385,24 @@
         "my experience shows", "my background demonstrates", "I've proven",
         "I'm confident in", "I excel at", "I specialize in"
       ]
+    },
+    "location_responses": {
+      "europe_only": {
+        "summary_qualifier": "My preference is for fully remote roles, though I'm open to exceptional opportunities regardless of location.",
+        "gaps_note": "Location flexibility may be a consideration, though I'm curious about potential remote arrangements or exceptional opportunities."
+      },
+      "us_only": {
+        "summary_qualifier": "While I'm based in Europe, I'm open to exploring opportunities that align with my remote work preferences.",
+        "gaps_note": "Geographic location may present practical considerations, though I'm interested in understanding the role's flexibility."
+      },
+      "location_restricted": {
+        "summary_qualifier": "I'm curious about the role's flexibility regarding remote work arrangements.",
+        "gaps_note": "Location requirements may need discussion, though I see potential for collaboration if there's flexibility."
+      },
+      "remote_excluded": {
+        "summary_qualifier": "Since my priority is full-remote collaboration, this might be a practical limitation unless there's flexibility.",
+        "gaps_note": "The on-site requirement may not align with my remote work preferences, though I'm open to discussing potential arrangements."
+      }
     }
   },
   "presentation": {
@@ -429,6 +447,63 @@
       "ban_if_only_in_ad": ["experienced in {{noun}}", "expert in {{noun}}"],
       "allow_if_profile_has": ["experience designing {{noun}}"],
       "soften_if_missing": ["familiar with {{noun}}", "adjacent to {{noun}}"]
+    },
+    "location_handling": {
+      "default_stance": "soft_caution_not_rejection",
+      "response_strategy": "professional_curiosity_with_remote_preference",
+      "bridge_building": "always_leave_conversation_open",
+      "avoid_desperation": "never_sound_apologetic_or_desperate"
+    },
+    "communication_softening": {
+      "always_leave_space": "use soft language if unsure (e.g., 'may overlap with my background' instead of hard claims)",
+      "misinterpretation_handling": "if requirements could be misinterpreted, soften the tone",
+      "rigid_rejection_ban": "never produce rigid rejections ('This won't work') — instead use cautious curiosity ('This might be a stretch, though I see potential overlaps worth exploring')"
+    },
+    "quick_take_calibration": {
+      "avoid_exploratory_if_adjacent": "Do not classify as 'exploratory_fit' if candidate has adjacent experience (healthcare, SaaS-like, complex systems)",
+      "upgrade_logic": "In such cases, upgrade Quick Take to at least 'stretch_fit' or 'good_fit'",
+      "synergy_preservation": "Avoid downplaying synergies when overlap exists"
+    },
+    "summary_intro_patterns": {
+      "avoid_generic": "Never start with generic 'I'm a product designer…' or 'I have a proven ability…'",
+      "required_style": "Start with confident, specific phrasing anchored in candidate identity",
+      "intro_templates": [
+        "I design with clarity and structure, bringing research and usability into complex systems.",
+        "I thrive on simplifying healthcare and B2B challenges into flows people trust.",
+        "I bring structure and research to complex systems, turning messy problems into clear solutions.",
+        "I design for trust in healthcare and enterprise, where clarity saves time and prevents errors."
+      ],
+      "variety_requirement": "These can be randomized slightly for variety but must always sound personal and senior"
+    },
+    "ai_tech_claims": {
+      "strict_evidence": "Only mention 'AI-first' or 'AI platforms' if explicitly present in candidate profile",
+      "soft_phrasing_when_missing": "If ad highlights AI but profile doesn't, use soft phrasing",
+      "fallback_template": "I'm familiar with AI-driven tools and adjacent patterns, and I'd apply my research-first approach here.",
+      "hallucination_ban": "Never hallucinate direct AI platform experience"
+    },
+    "location_mismatch_detection": {
+      "trigger_phrases": ["in-house", "on-site", "Stockholm only", "EU only", "US only", "location restricted", "must be in", "relocation required"],
+      "response_template": "I noticed this role emphasizes in-house work in {{location}}. My focus is remote-first, though I'd be open to a conversation if flexibility exists.",
+      "tone_requirement": "Keep tone professional and soft — not a rejection, but a clarification",
+      "generic_handling": "This logic should be generic enough to handle Stockholm, Europe, USA, or other restricted geographies"
+    },
+    "closing_line_strength": {
+      "strong_fit": [
+        "This looks promising — I'd be glad to explore further.",
+        "If this resonates, I'm open to a short conversation."
+      ],
+      "good_fit": [
+        "Worth exploring together — let me know if you'd like to connect."
+      ],
+      "stretch_fit": [
+        "If you see potential here, I'm open to discussing how my background might fit."
+      ],
+      "avoid_weak": "Avoid overly weak closings like 'Curious to learn more if you see potential'"
+    },
+    "summary_guardrails": {
+      "no_company_insertions": "Enforce: no company name insertions in Summary ('At X, I…')",
+      "avoid_tautologies": "Avoid tautologies like 'which matches the requirements of this role'",
+      "anchor_requirement": "Always anchor to role themes and problem space, not brand slogans"
     }
   },
   "fit_policy": {
