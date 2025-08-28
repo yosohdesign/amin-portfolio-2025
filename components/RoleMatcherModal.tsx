@@ -97,6 +97,9 @@ const ValidationMessage = ({ message, type = 'warning' }: { message: string; typ
   
   const colors = getColors()
   
+  // Match modal/drawer typography
+  const fontSize = useBreakpointValue({ base: 'sm', lg: 'md' })
+  
   return (
     <Box
       bg={colors.bg}
@@ -105,7 +108,7 @@ const ValidationMessage = ({ message, type = 'warning' }: { message: string; typ
       position="relative"
     >
       <Box>
-        <Text fontSize="md" color={colors.text} lineHeight="1.6" fontWeight="500">
+        <Text fontSize={fontSize} color="gray.600" lineHeight="1.6" fontWeight="normal">
           {message}
         </Text>
       </Box>
