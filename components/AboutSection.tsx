@@ -142,7 +142,7 @@ export default function AboutSection() {
                   }
                 }}
               >
-                I've spent over 8 years designing digital products that turn complexity into clarity. My experience spans IoT, healthcare, e-commerce, internal tools, B2B platforms, and most recently audio software management systems, where my work also touched on hardware design. Beyond solving problems, I focus on making products that feel practical and pleasant to use.
+                Design has always been part of how I work and think, from simplifying problems to turning ideas into something people can actually use. Over the past 8 years I’ve worked across IoT, healthcare, e-commerce, internal tools, B2B platforms, and most recently audio software management systems, where my work also included hardware design. I enjoy creating products that feel clear, practical, and good to use.
               </Text>
               
               <Text
@@ -163,7 +163,7 @@ export default function AboutSection() {
                   }
                 }}
               >
-                Outside of work, I enjoy life with my wife and two kids. I like to challenge myself, both personally and professionally, and I'm drawn to opportunities where I can keep learning and growing. Working remotely suits me well, as it allows me to balance focus and flexibility while staying connected to diverse teams.
+                Outside of work, I spend time with my wife and two kids. I like to challenge myself, keep learning, and take on projects where I can grow while working with great teams. Remote work suits me well, giving me the balance of focus, flexibility, and collaboration that I value.
               </Text>
               
               <Button
